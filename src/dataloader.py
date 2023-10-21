@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
+from interpolation_ways import *
 import torch.nn.functional as F
 
 
@@ -54,7 +55,7 @@ def create_testloader(configs, root_dir=None):
                       collate_fn=test_collate_fn,
                       batch_size=1, shuffle=False, num_workers=0)
 
-def get_data_from_path(file_path, root_dir=None):
+def get_data_from_path(configs, file_path, root_dir=None):
     if root_dir is None:
         root_dir = Path(os.getcwd()).parent.absolute()
     # print(f"root directory: {root_dir}")
@@ -64,11 +65,10 @@ def get_data_from_path(file_path, root_dir=None):
 
     date = np.array(dataset['date'])
     flux = np.array(dataset['flux'])
-    mean_flux = np.nanmean(flux)
-    # print(f'flux: {flux}, mean: {mean_flux}')
 
-    flux[np.isnan(flux)] = mean_flux
-    # print(f'모든 결측치를 평균으로 설정: {flux}')
+    interpolation_model = InterpolationRemoveLongMissingValue(configs)
+
+    flux = interpolation_model.get_dataset(flux)
 
     return date, flux
 
@@ -84,31 +84,23 @@ class JeonpaDataset(Dataset):
         self.pred_len = configs.model.pred_len
 
         # 학습데이터와 테스트데이터를 나눔.
-        date, flux = get_data_from_path(self.configs.data.trainset, root_dir=root_dir)
+        date, flux = get_data_from_path(configs, self.configs.data.trainset, root_dir=root_dir)
         split_index = int(len(flux) * self.split_rate)
-        self.train_date = date[:split_index]
-        self.train_flux = flux[:split_index]
-        self.test_date = date[split_index:]
-        self.test_flux = flux[split_index:]
+
+        self.train = flux[:split_index]
+        self.test = flux[split_index:]
 
     def __len__(self):
-        # 입력, 출력 길이에 따라 사용할 수 있는 데이터의 양이 달라진다.
-        # raw 데이터 길이가 100이고, seq_len = 60, pred_len = 30인 경우 -> 90개
-        # 11개의 학습 데이터를 뽑을 수 있음
-        # 0-89, 1-90, 2-91, 3-92, 4-93,
-        # 5-94, 6-95, 7-96, 8-97, 9-98, 10-99
-        # total_train_len = dataset_len - self.seq_len - self.pred_len + 1
-        minus = self.seq_len + self.pred_len - 1
         if self.train:
-            return len(self.train_date) - minus  # or train_flux
+            return len(self.train)
         else:
-            return len(self.test_date) - minus  # or test_flux
+            return len(self.test)
 
     def __getitem__(self, idx):
         if self.train:
             # dim = 1
-            train_seq = self.train_flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
-            train_pred = self.train_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
+            # train_seq = self.train_flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
+            # train_pred = self.train_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
 
             # shape = (3, 2)
             # shape[:, np.newaxis, :] # 3, 1, 2
@@ -116,18 +108,18 @@ class JeonpaDataset(Dataset):
             # flatten -> 차원 밀어서 -> 1차원
             # squeeze((3, 1, 1, 1, 1, 2)) -> (3, 2)
             # sequeeze((3, 1, 2, 1), dim=1) -> (3, 2, 1)
-            return train_seq, train_pred
+            return self.train[idx]
         else:
-            validation_seq = self.test_flux[idx:idx + self.seq_len][:, np.newaxis]
-            validation_pred = self.test_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]
-            return validation_seq, validation_pred
-
+            # validation_seq = self.test_flux[idx:idx + self.seq_len][:, np.newaxis]
+            # validation_pred = self.test_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]
+            # return validation_seq, validation_pred
+            return self.test[idx]
 
 class JeonpaTestDataset(Dataset):
     def __init__(self, configs, root_dir=None):
         self.configs = configs
         self.seq_len = configs.model.seq_len
-        self.date, self.flux = get_data_from_path(self.configs.data.testset, root_dir=root_dir)
+        self.date, self.flux = get_data_from_path(configs, self.configs.data.testset, root_dir=root_dir)
 
     def __len__(self):
         # 입력, 출력 길이에 따라 사용할 수 있는 데이터의 양이 달라진다.
@@ -136,9 +128,9 @@ class JeonpaTestDataset(Dataset):
         # 0-89, 1-90, 2-91, 3-92, 4-93,
         # 5-94, 6-95, 7-96, 8-97, 9-98, 10-99
         # total_train_len = dataset_len - self.seq_len - self.pred_len + 1
-        minus = self.seq_len - 1
-        return len(self.date) - minus  # or test_flux
-
+        # minus = self.seq_len - 1
+        # return len(self.date) - minus  # or test_flux
+        return len(self.flux)
     def __getitem__(self, idx):
-        train_seq = self.flux[idx:idx + self.seq_len][:, np.newaxis]
-        return train_seq
+        # train_seq = self.flux[idx:idx + self.seq_len][:, np.newaxis]
+        return self.flux[idx]
