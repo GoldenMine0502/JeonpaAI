@@ -1,5 +1,6 @@
 import torch
-import torch as nn
+from torch import nn
+
 
 # 시계열 데이터를 분해하는 부분
 class MovingAvg(nn.Module):
