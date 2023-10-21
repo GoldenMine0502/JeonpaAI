@@ -103,6 +103,6 @@ class JeonpaDataset(Dataset):
             # sequeeze((3, 1, 2, 1), dim=1) -> (3, 2, 1)
             return train_seq, train_pred
         else:
-            test_seq = self.test_flux[idx:idx + self.seq_len][:, np.newaxis]
-            test_pred = self.test_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]
-            return test_seq, test_pred
+            validation_seq = self.test_flux[idx:idx + self.seq_len][:, np.newaxis]
+            validation_pred = self.test_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]
+            return validation_seq, validation_pred
