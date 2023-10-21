@@ -9,8 +9,16 @@ import torch.nn.functional as F
 
 def create_dataloader(configs, train, root_dir=None):
     def train_collate_fn(batch):
-        print(batch)
-        return batch
+        train_seq_list = list()
+        train_pred_list = list()
+
+        for train_seq, train_pred in batch:
+            train_seq_list.append(torch.from_numpy(train_seq))
+            train_pred_list.append(torch.from_numpy(train_pred))
+
+        train_seq_list = torch.stack(train_seq_list, dim=0)
+        train_pred_list = torch.stack(train_pred_list, dim=0)
+        return train_seq_list, train_pred_list
 
     def test_collate_fn(batch):
         return batch
