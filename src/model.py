@@ -43,14 +43,14 @@ class Model(nn.Module):
     """
     def __init__(self, configs):
         super(Model, self).__init__()
-        self.seq_len = configs.seq_len # 60일간 데이터로
-        self.pred_len = configs.pred_len # 30일 미래예측
+        self.seq_len = configs.model.seq_len # 60일간 데이터로
+        self.pred_len = configs.model.pred_len # 30일 미래예측
 
         # Decompsition Kernel Size
         kernel_size = 25
         self.decompsition = SeriesDecomp(kernel_size)
-        self.individual = configs.individual
-        self.channels = configs.channels
+        self.individual = configs.model.individual
+        self.channels = configs.model.channels
 
         if self.individual:
             self.Linear_Seasonal = nn.ModuleList()
