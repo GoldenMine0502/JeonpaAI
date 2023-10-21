@@ -7,11 +7,17 @@ model:
 ---
 train:
   batch_size: 4
-  num_workers: 6
+  num_workers: 12
   optimizer: 'adam'
   adam: 0.005
   summary_interval: 100
   checkpoint_interval: 5000
+
+---
+data:
+  trainset: './dataset/ai_competition_train.xlsx'
+  testset: './dataset/ai_competition_test.xlsx'
+  split_rate: 0.9
 
 ---
 log:
