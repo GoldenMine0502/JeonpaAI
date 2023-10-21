@@ -1,0 +1,19 @@
+model:
+  seq_len: 60
+  pred_len: 30
+  indiviual: False
+  channels: 7
+
+---
+train:
+  batch_size: 4
+  num_workers: 6
+  optimizer: 'adam'
+  adam: 0.005
+  summary_interval: 100
+  checkpoint_interval: 5000
+
+---
+log:
+  chkpt_dir: 'chkpt'
+  log_dir: 'logs'
