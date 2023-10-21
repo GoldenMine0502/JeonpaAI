@@ -20,7 +20,7 @@ def create_dataloader(configs, train, root_dir=None):
         train_pred_list = torch.stack(train_pred_list, dim=0)
         return train_seq_list, train_pred_list
 
-    def test_collate_fn(batch):
+    def validation_collate_fn(batch):
         return batch
 
     if train:
@@ -35,7 +35,7 @@ def create_dataloader(configs, train, root_dir=None):
                           )
     else:
         return DataLoader(dataset=JeonpaDataset(configs, False, root_dir=root_dir),
-                          collate_fn=test_collate_fn,
+                          collate_fn=validation_collate_fn,
                           batch_size=1, shuffle=False, num_workers=0)
 
 
