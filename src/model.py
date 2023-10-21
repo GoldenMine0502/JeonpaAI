@@ -43,8 +43,8 @@ class Model(nn.Module):
     """
     def __init__(self, configs):
         super(Model, self).__init__()
-        self.seq_len = configs.model.seq_len # 60일간 데이터로
-        self.pred_len = configs.model.pred_len # 30일 미래예측
+        self.seq_len = configs.model.seq_len  # 60일간 데이터로
+        self.pred_len = configs.model.pred_len  # 30일 미래예측
 
         # Decompsition Kernel Size
         kernel_size = 25
@@ -84,4 +84,4 @@ class Model(nn.Module):
             trend_output = self.Linear_Trend(trend_init)
 
         x = seasonal_output + trend_output
-        return x.permute(0,2,1) # to [Batch, Output length, Channel]
+        return x.permute(0,2,1)  # to [Batch, Output length, Channel]
