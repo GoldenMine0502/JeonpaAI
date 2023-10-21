@@ -1,7 +1,7 @@
 model:
   seq_len: 60
   pred_len: 30
-  indiviual: False
+  individual: False
   channels: 7
 
 ---
@@ -10,8 +10,8 @@ train:
 #  num_workers: 8 # num_workers does not work
   optimizer: 'adam'
   adam: 0.005
-  summary_interval: 100
-  checkpoint_interval: 5000
+  summary_interval: 1
+  checkpoint_interval: 50
 
 ---
 data:
