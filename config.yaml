@@ -7,7 +7,7 @@ model:
 ---
 train:
   batch_size: 4
-  num_workers: 12
+#  num_workers: 8 # num_workers does not work
   optimizer: 'adam'
   adam: 0.005
   summary_interval: 100
@@ -15,8 +15,8 @@ train:
 
 ---
 data:
-  trainset: './dataset/ai_competition_train.xlsx'
-  testset: './dataset/ai_competition_test.xlsx'
+  trainset: 'dataset/ai_competition_train.csv'
+  testset: 'dataset/ai_competition_test.csv'
   split_rate: 0.9
 
 ---
