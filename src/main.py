@@ -32,10 +32,23 @@ with open(config_path, 'r') as f:
     hp_str = ''.join(f.readlines())
 
 optimizer = torch.optim.Adam(model.parameters(), lr=config.train.adam)
+# optimizer = torch.optim.SGD(model.parameters(), lr=config.train.adam)
 
 step = 0
+
+# Berhu_loss
+def berhu_loss(y_pred, y_true):
+    delta = 0.2  # default 0.2
+    abs_error = torch.abs(y_pred - y_true)
+    c = delta * torch.max(abs_error).detach()
+    return torch.mean(torch.where(abs_error <= c, abs_error, (abs_error ** 2 + c ** 2 / (2 * c))))
+
+criterion = nn.HuberLoss(delta=1)
+# criterion = berhu_loss
+# criterion = nn.L1Loss()
+# criterion = nn.MSELoss()
+
 # try:
-criterion = nn.HuberLoss()
 while True:
     model.train()
     for train_seq, train_pred in trainloader:  # 요게 다 돌면 에포크
@@ -44,6 +57,8 @@ while True:
         # print(train_seq.shape, train_pred.shape)
 
         result = model(train_seq)
+        # RMSE = torch.sqrt(criterion(x, y))
+        # loss = torch.sqrt(criterion(result, train_pred))
         loss = criterion(result, train_pred)
 
         optimizer.zero_grad()
