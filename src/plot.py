@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from configs import Config
 # from scipy.interpolate import make_interp_spline, BSpline
 
-root_dir = Path(os.getcwd()).absolute()
+root_dir = Path(os.getcwd()).parent.absolute()
 print(f"root directory: {root_dir}")
 
 config_path = f'{root_dir}/config.yaml'
