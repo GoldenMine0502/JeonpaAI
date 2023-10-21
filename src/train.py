@@ -3,6 +3,7 @@ import math
 import torch
 import torch.nn as nn
 import os
+import xlsxwriter
 
 import dataloader
 from model import Model
@@ -99,7 +100,7 @@ class Train:
                     'hp_str': self.hp_str,
                 }, save_path)
                 print("Saved checkpoint to: %s" % save_path)
-                self.test()
+                self.test(step)
 
             if step == self.config.train.step_limit:
                 print(f"Quit step {step}")
@@ -132,23 +133,42 @@ class Train:
 
         return loss
 
-    def test(self):
+    def test(self, step):
         with torch.no_grad():
             for test_seq in self.testloader:
                 result = self.model(test_seq)
-                self.write_csv(result)
+                self.write_csv(result, step)
 
-    def write_csv(self, result):
+    def write_csv(self, result, step):
         result = result[0]
         # date,flux,,,
         # 1,,,,
         # 2,,,,
         # 3,,,,
-        print(f'Saved test to {self.root_dir}/result.csv')
-        with open(f'{self.root_dir}/result.csv', 'wt') as file:
-            file.write("date,flux,,,\n")
+        # with open(f'{self.root_dir}/result.csv', 'wt') as file:
+        #     file.write("date,flux,,,\n")
+        #
+        #     length = len(result)
+        #
+        #     for date in range(length):
+        #         file.write(f'{date + 1},{result[date][0]},,,\n')
+        folder = f'{self.root_dir}/results'
+        filepath = f'{self.root_dir}/results/result_{step}.xlsx'
 
-            length = len(result)
+        if not os.path.exists(folder):
+            os.mkdir(f'{self.root_dir}/results')
+        if os.path.exists(filepath):
+            os.remove(filepath)
 
-            for date in range(length):
-                file.write(f'{date + 1},{result[date][0]},,,\n')
+        workbook = xlsxwriter.Workbook(filepath)
+        worksheet = workbook.add_worksheet()
+
+        worksheet.write(0, 0, 'date')
+        worksheet.write(0, 1, 'flux')
+        for i, date in enumerate(result):
+            worksheet.write(i + 1, 0, i + 1)
+            worksheet.write(i + 1, 1, date[0])
+
+        workbook.close()
+
+        print(f'Saved test to {filepath}')
