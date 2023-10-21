@@ -85,7 +85,8 @@ class Train:
             if step % self.config.train.summary_interval == 0:
                 # writer.log_training(loss, step)
                 val_loss = self.validate()
-                print("Wrote summary at step %d, loss: %f, val_loss: %f" % (step, loss, val_loss))
+                val_loss_rmse = self.validate(rmse=True)
+                print("Wrote summary at step %d, loss: %f, val_loss: %f, val_rmse_loss: %f" % (step, loss, val_loss, val_loss_rmse))
             # 1. save checkpoint file to resume training
             # 2. evaluate and save sample to tensorboard
             if step % self.config.train.checkpoint_interval == 0:
@@ -108,15 +109,21 @@ class Train:
         #     print("Exiting due to exception: %s" % e)
         #     traceback.print_exc()
 
-    def validate(self):
+    def validate(self, rmse=False):
         with torch.no_grad():
             losses = []
+
+
+            criterion = nn.MSELoss() if rmse else self.criterion
 
             for validation_seq, validation_pred in self.validationloader:
                 result = self.model(validation_seq)
                 # RMSE = torch.sqrt(criterion(x, y))
                 # loss = torch.sqrt(criterion(result, train_pred))
-                loss = self.criterion(result, validation_pred)
+                if rmse:
+                    loss = torch.sqrt(criterion(result, validation_pred))
+                else:
+                    loss = criterion(result, validation_pred)
                 loss = loss.item()
                 losses.append(loss)
 
