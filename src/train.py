@@ -24,7 +24,7 @@ class Train:
         self.criterion = self.get_criterion()
 
     def get_model(self):
-        device = torch.device('cpu')
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         model = Model(self.config)
         model.to(device)
 
@@ -99,7 +99,7 @@ class Train:
                     'hp_str': self.hp_str,
                 }, save_path)
                 print("Saved checkpoint to: %s" % save_path)
-                # self.test()
+                self.test()
 
             if step == self.config.train.step_limit:
                 print(f"Quit step {step}")
@@ -136,4 +136,19 @@ class Train:
         with torch.no_grad():
             for test_seq in self.testloader:
                 result = self.model(test_seq)
-                print(result)
+                self.write_csv(result)
+
+    def write_csv(self, result):
+        result = result[0]
+        # date,flux,,,
+        # 1,,,,
+        # 2,,,,
+        # 3,,,,
+        print(f'Saved test to {self.root_dir}/result.csv')
+        with open(f'{self.root_dir}/result.csv', 'wt') as file:
+            file.write("date,flux,,,\n")
+
+            length = len(result)
+
+            for date in range(length):
+                file.write(f'{date + 1},{result[date][0]},,,\n')
