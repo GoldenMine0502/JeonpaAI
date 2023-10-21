@@ -92,8 +92,8 @@ class JeonpaDataset(Dataset):
     def __getitem__(self, idx):
         if self.train:
             # dim = 1
-            train_seq = self.train_flux[idx:idx + self.seq_len][:, np.newaxis]
-            train_pred = self.train_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]
+            train_seq = self.train_flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
+            train_pred = self.train_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
 
             # shape = (3, 2)
             # shape[:, np.newaxis, :] # 3, 1, 2
