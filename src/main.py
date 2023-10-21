@@ -8,9 +8,6 @@ from configs import Config
 from dataloader import create_dataloader
 from train import Train
 
-# device
-device = torch.device('cpu')
-
 # config
 root_dir = Path(os.getcwd()).absolute()
 print(f"root directory: {root_dir}")
