@@ -9,9 +9,10 @@ train:
   batch_size: 4
 #  num_workers: 8 # num_workers does not work
   optimizer: 'adam'
-  adam: 0.005
+  adam: 0.0001
   summary_interval: 1
   checkpoint_interval: 50
+  step_limit: 500
 
 ---
 data:

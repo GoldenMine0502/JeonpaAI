@@ -13,8 +13,8 @@ def create_dataloader(configs, train, root_dir=None):
         train_pred_list = list()
 
         for train_seq, train_pred in batch:
-            train_seq_list.append(torch.from_numpy(train_seq))
-            train_pred_list.append(torch.from_numpy(train_pred))
+            train_seq_list.append(torch.from_numpy(train_seq).float())
+            train_pred_list.append(torch.from_numpy(train_pred).float())
 
         train_seq_list = torch.stack(train_seq_list, dim=0)
         train_pred_list = torch.stack(train_pred_list, dim=0)
@@ -51,11 +51,6 @@ class JeonpaDataset(Dataset):
         self.pred_len = configs.model.pred_len
 
         # 학습데이터와 테스트데이터를 나눔.
-        # raw 데이터 길이가 100이고, seq_len = 60, pred_len = 30인 경우 -> 90개
-        # 10개의 학습 데이터를 뽑을 수 있음
-        # 0-89, 1-90, 2-91, 3-92, 4-93,
-        # 5-94, 6-95, 7-96, 8-97, 9-98, 10-99
-        # total_train_len = dataset_len - self.seq_len - self.pred_len + 1
         date, flux = self.get_data_from_path(self.configs.data.trainset, root_dir=root_dir)
         split_index = int(len(flux) * self.split_rate)
         self.train_date = date[:split_index]
@@ -83,6 +78,11 @@ class JeonpaDataset(Dataset):
 
     def __len__(self):
         # 입력, 출력 길이에 따라 사용할 수 있는 데이터의 양이 달라진다.
+        # raw 데이터 길이가 100이고, seq_len = 60, pred_len = 30인 경우 -> 90개
+        # 11개의 학습 데이터를 뽑을 수 있음
+        # 0-89, 1-90, 2-91, 3-92, 4-93,
+        # 5-94, 6-95, 7-96, 8-97, 9-98, 10-99
+        # total_train_len = dataset_len - self.seq_len - self.pred_len + 1
         minus = self.seq_len + self.pred_len - 1
         if self.train:
             return len(self.train_date) - minus  # or train_flux
@@ -91,10 +91,18 @@ class JeonpaDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.train:
-            train_seq = self.train_flux[idx:idx + self.seq_len]
-            train_pred = self.train_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len]
+            # dim = 1
+            train_seq = self.train_flux[idx:idx + self.seq_len][:, np.newaxis]
+            train_pred = self.train_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]
+
+            # shape = (3, 2)
+            # shape[:, np.newaxis, :] # 3, 1, 2
+            # shape.unsqueeze(1) (3, 1, 2)
+            # flatten -> 차원 밀어서 -> 1차원
+            # squeeze((3, 1, 1, 1, 1, 2)) -> (3, 2)
+            # sequeeze((3, 1, 2, 1), dim=1) -> (3, 2, 1)
             return train_seq, train_pred
         else:
-            test_seq = self.test_flux[idx:idx + self.seq_len]
-            test_pred = self.test_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len]
+            test_seq = self.test_flux[idx:idx + self.seq_len][:, np.newaxis]
+            test_pred = self.test_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]
             return test_seq, test_pred

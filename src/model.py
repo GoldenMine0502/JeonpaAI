@@ -15,6 +15,15 @@ class MovingAvg(nn.Module):
     def forward(self, x):
         # padding on the both ends of time series
         # 시계열 데이터의 앞뒤에 맨 앞값과 맨 앞뒤를 여러번 배열하면서 패딩
+        # [batch_size, sequence, value]
+        # [[1, 2, 3, 4]
+        # [1, 2, 3, 4]
+        # [1, 2, 3, 4]
+        # [1, 2, 3, 4]
+        # [1, 2, 3, 4]
+        # [1, 2, 3, 4]
+        # [1, 2, 3, 4]]
+
         front = x[:, 0:1, :].repeat(1, (self.kernel_size - 1) // 2, 1)
         end = x[:, -1:, :].repeat(1, (self.kernel_size - 1) // 2, 1)
         x = torch.cat([front, x, end], dim=1)
