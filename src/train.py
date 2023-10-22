@@ -20,7 +20,7 @@ class Train:
         self.testloader = create_testloader(config, root_dir=root_dir)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        # self.model = DLinear(self.config)
+        self.model = DLinear(self.config)
         # self.model = DCRNNModel(
         #     adj_mat=None,
         #     batch_size=config.train.batch_size,
@@ -34,7 +34,7 @@ class Train:
         #     output_dim=1,
         #     filter_type=None
         # )
-        self.model = CRNN(self.config.model.seq_len, self.config.model.pred_len)
+        # self.model = CRNN(self.config.model.seq_len, self.config.model.pred_len)
         self.model.to(self.device)
         self.optimizer = self.get_optimizer()
         self.criterion = self.get_criterion()
@@ -68,8 +68,10 @@ class Train:
             losses = []
             for train_seq, train_pred in self.trainloader:  # 요게 다 돌면 에포크
                 # CRNN
-                train_seq = train_seq.squeeze(2).to(self.device)
-                train_pred = train_pred.squeeze(2).to(self.device)
+                train_seq = train_seq.to(self.device)
+                train_pred = train_pred.to(self.device)
+                # train_seq = train_seq.squeeze(2).to(self.device)
+                # train_pred = train_pred.squeeze(2).to(self.device)
                 # print("train_seq:", train_seq)
                 # print("train_pred:", train_pred)
                 # print(train_seq.shape, train_pred.shape)
@@ -129,8 +131,10 @@ class Train:
             criterion = nn.MSELoss() if rmse else self.criterion
 
             for validation_seq, validation_pred in self.validationloader:
-                validation_seq = validation_seq.squeeze(2).to(self.device)
-                validation_pred = validation_pred.squeeze(2).to(self.device)
+                validation_seq = validation_seq.to(self.device)
+                validation_pred = validation_pred.to(self.device)
+                # validation_seq = validation_seq.squeeze(2).to(self.device)
+                # validation_pred = validation_pred.squeeze(2).to(self.device)
 
                 result = self.model(validation_seq)
                 # RMSE = torch.sqrt(criterion(x, y))
@@ -150,11 +154,13 @@ class Train:
     def test(self, step):
         with torch.no_grad():
             for test_seq in self.testloader:
-                test_seq = test_seq.squeeze(2).to(self.device)
+                test_seq = test_seq.to(self.device)
+                # test_seq = test_seq.squeeze(2).to(self.device)
                 result = self.model(test_seq)
                 self.write_csv(result, step)
 
     def write_csv(self, result, step):
+        # print(result.shape)
         result = result[0]
         # date,flux,,,
         # 1,,,,
@@ -182,7 +188,7 @@ class Train:
         worksheet.write(0, 1, 'flux')
         for i, date in enumerate(result):
             worksheet.write(i + 1, 0, i + 1)
-            worksheet.write(i + 1, 1, date[0])
+            worksheet.write(i + 1, 1, date)
 
         workbook.close()
 

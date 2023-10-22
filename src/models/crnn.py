@@ -4,7 +4,7 @@ import torch.nn as nn
 class CRNN(nn.Module):
 
     def __init__(self, train_len, num_class,
-                 img_channel=1, map_to_seq_hidden=64, rnn_hidden=64, leaky_relu=False):
+                 img_channel=1, map_to_seq_hidden=64, rnn_hidden=256, leaky_relu=False):
         super(CRNN, self).__init__()
 
         self.cnn, (output_channel, output_length) = self._cnn_backbone(img_channel, train_len, leaky_relu)
@@ -19,7 +19,7 @@ class CRNN(nn.Module):
     def _cnn_backbone(self, img_channel, img_len, leaky_relu):
         # assert img_len % 16 == 0
 
-        channels = [img_channel, 16, 32, 32, 32, 64, 64, 64]
+        channels = [img_channel, 64, 128, 256, 256, 512, 512, 512]
         kernel_sizes = [3, 3, 3, 3, 3, 3, 2]
         strides = [1, 1, 1, 1, 1, 1, 1]
         paddings = [1, 1, 1, 1, 1, 1, 0]
