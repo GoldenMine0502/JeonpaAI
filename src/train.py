@@ -20,16 +20,11 @@ class Train:
         self.validationloader = create_dataloader(config, False, root_dir=root_dir)
         self.testloader = create_testloader(config, root_dir=root_dir)
 
-        self.model = self.get_model()
-        self.optimizer = self.get_optimizer(self.model)
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.model = Model(self.config)
+        self.model.to(self.device)
+        self.optimizer = self.get_optimizer()
         self.criterion = self.get_criterion()
-
-    def get_model(self):
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        model = Model(self.config)
-        model.to(device)
-
-        return model
 
     def get_criterion(self):
         # Berhu_loss
@@ -39,15 +34,15 @@ class Train:
             c = delta * torch.max(abs_error).detach()
             return torch.mean(torch.where(abs_error <= c, abs_error, (abs_error ** 2 + c ** 2 / (2 * c))))
 
-        criterion = nn.HuberLoss(delta=1)
+        # criterion = nn.HuberLoss(delta=1)
         # criterion = berhu_loss
-        # criterion = nn.L1Loss()
+        criterion = nn.L1Loss()
         # criterion = nn.MSELoss()
 
         return criterion
 
-    def get_optimizer(self, model):
-        optimizer = torch.optim.Adam(model.parameters(), lr=self.config.train.adam)
+    def get_optimizer(self):
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config.train.adam)
         # optimizer = torch.optim.SGD(model.parameters(), lr=config.train.adam)
 
         return optimizer
@@ -59,6 +54,8 @@ class Train:
             self.model.train()
             losses = []
             for train_seq, train_pred in self.trainloader:  # 요게 다 돌면 에포크
+                train_seq = train_seq.to(self.device)
+                train_pred = train_pred.to(self.device)
                 # print("train_seq:", train_seq)
                 # print("train_pred:", train_pred)
                 # print(train_seq.shape, train_pred.shape)
@@ -118,6 +115,9 @@ class Train:
             criterion = nn.MSELoss() if rmse else self.criterion
 
             for validation_seq, validation_pred in self.validationloader:
+                validation_seq = validation_seq.to(self.device)
+                validation_pred = validation_pred.to(self.device)
+
                 result = self.model(validation_seq)
                 # RMSE = torch.sqrt(criterion(x, y))
                 # loss = torch.sqrt(criterion(result, train_pred))
@@ -136,6 +136,7 @@ class Train:
     def test(self, step):
         with torch.no_grad():
             for test_seq in self.testloader:
+                test_seq = test_seq.to(self.device)
                 result = self.model(test_seq)
                 self.write_csv(result, step)
 
