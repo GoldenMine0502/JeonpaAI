@@ -67,7 +67,7 @@ def get_data_from_path(configs, file_path, test=False, root_dir=None):
     flux = np.array(dataset['flux']).copy()
     print('len before interpolation:', len(flux))
 
-    interpolation_model = InterpolationRemoveLongMissingValue(configs, pass_count=25)
+    interpolation_model = InterpolationRemoveLongMissingValue(configs)
     # interpolation_model = InterpolationPoly(configs)
     # interpolation_model = InterpolationKNN(configs)
 

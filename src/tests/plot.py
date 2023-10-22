@@ -22,22 +22,45 @@ def interpolate_cubic_spline(flux):
     y = []
     nans = np.isnan(flux)
 
-    for i in range(flux):
+    for i in range(len(flux)):
         if not nans[i]:
             x.append(i)
             y.append(flux[i])
 
-    f = CubicSpline(x, y, bc_type='natural')
+    f = CubicSpline(x, y, bc_type='clamped')
 
     flux = f(np.arange(len(flux)))
 
     return flux
 
+def interpolate_knn(flux):
+    imputer = KNNImputer(n_neighbors=100)
+    # x = np.arange(len(flux)).copy().reshape(-1, 1)
+    # y = flux.copy().reshape(1, -1)
+    # print(x.shape)
+    # print(y.shape)
+    x = []
+    y = []
+    # nans = np.isnan(flux)
+
+    # for i in range(len(flux)):
+    #     if not nans[i]:
+    #         x.append(i)
+    #         y.append(flux[i])
+    for i in range(len(flux)):
+        # if not nans[i]:
+        x.append(i)
+        y.append(flux[i])
+
+    flux = imputer.fit_transform(pd.DataFrame({'x': x, 'y': y}))
+    # print(type(flux))
+    return flux[:, 1]
 
 for data, color in datalist:
     flux = np.array(pd.read_csv(data)['flux'])
 
     flux = interpolate_cubic_spline(flux)
+    # flux = interpolate_knn(flux)
     # imputer = KNNImputer(n_neighbors=90)
     # x = np.arange(len(flux)).copy().reshape(-1, 1)
     # y = flux.copy().reshape(1, -1)
@@ -58,7 +81,7 @@ for data, color in datalist:
     # # 결측값 보간
     # flux = poly_interpolator(np.arange(len(flux)))
 
-    print(flux)
+    # print(flux)
 
     plt.plot(x, flux, color=color, linestyle='-', linewidth=1.5)
 

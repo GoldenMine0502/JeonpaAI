@@ -40,7 +40,7 @@ class InterpolationAllAverage:
 # 모든 Nan을 전체 평균으로 대치
 
 class InterpolationRemoveLongMissingValue:
-    def __init__(self, configs, pass_count=10):
+    def __init__(self, configs, pass_count=45):
         self.config = configs
         self.seq_len = configs.model.seq_len
         self.pred_len = configs.model.pred_len
@@ -85,8 +85,9 @@ class InterpolationRemoveLongMissingValue:
                 # if to_add:
                 fancy.append(to_add)
 
-            linear_interpolation(flux)
-            # flux = interpolate_knn(flux)
+            # linear_interpolation(flux)
+            flux = interpolate_knn(flux)
+            # flux = interpolate_cubic_spline(flux)
 
             dataset = []
             for idx in range(len(flux) - self.seq_len - self.pred_len + 1):
@@ -133,21 +134,34 @@ def linear_interpolation(flux):
                 # print(last_value, flux[i], (last_index - first_index + 1), (i - first_index + 1))
 
 def interpolate_knn(flux):
-    imputer = KNNImputer(n_neighbors=45)
+    imputer = KNNImputer(n_neighbors=135)
     # x = np.arange(len(flux)).copy().reshape(-1, 1)
     # y = flux.copy().reshape(1, -1)
-    dataframe = pd.DataFrame({'y': flux})
     # print(x.shape)
     # print(y.shape)
-    flux = imputer.fit_transform(dataframe).copy().reshape(-1)
-    return flux
+    x = []
+    y = []
+    # nans = np.isnan(flux)
+
+    # for i in range(len(flux)):
+    #     if not nans[i]:
+    #         x.append(i)
+    #         y.append(flux[i])
+    for i in range(len(flux)):
+        # if not nans[i]:
+        x.append(i)
+        y.append(flux[i])
+
+    flux = imputer.fit_transform(pd.DataFrame({'x': x, 'y': y}))
+    # print(type(flux))
+    return flux[:, 1]
 
 def interpolate_cubic_spline(flux):
     x = []
     y = []
     nans = np.isnan(flux)
 
-    for i in range(flux):
+    for i in range(len(flux)):
         if not nans[i]:
             x.append(i)
             y.append(flux[i])
