@@ -21,7 +21,7 @@ class Train:
         self.testloader = create_testloader(config, root_dir=root_dir)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model = NLinear(self.config)
+        self.model = DLinear(self.config)
         self.model.to(self.device)
         self.optimizer = self.get_optimizer()
         self.criterion = self.get_criterion()
