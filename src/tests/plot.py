@@ -34,7 +34,7 @@ def interpolate_cubic_spline(flux):
     return flux
 
 def interpolate_knn(flux):
-    imputer = KNNImputer(n_neighbors=100)
+    imputer = KNNImputer(n_neighbors=135)
     # x = np.arange(len(flux)).copy().reshape(-1, 1)
     # y = flux.copy().reshape(1, -1)
     # print(x.shape)

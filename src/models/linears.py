@@ -62,7 +62,7 @@ class DLinear(nn.Module):
         self.channels = configs.model.channels
 
         # Decompsition Kernel Size
-        kernel_size = 25
+        kernel_size = 15
         self.decompsition = SeriesDecomp(kernel_size)
 
         mid = 120
