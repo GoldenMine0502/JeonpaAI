@@ -3,6 +3,10 @@ model:
   pred_len: 30
   individual: False
   channels: 1
+  moving_avg: 15
+  output_attention: False
+  enc_in: 321
+  dec_in: 321
 
 ---
 train:
