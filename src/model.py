@@ -49,21 +49,21 @@ class SeriesDecomp(nn.Module):
 
 
 # 1-layer linear network 구현 부분
-class Model(nn.Module):
+class DLinear(nn.Module):
     """
     DLinear
     """
 
     def __init__(self, configs):
-        super(Model, self).__init__()
+        super(DLinear, self).__init__()
         self.seq_len = configs.model.seq_len  # 60일간 데이터로
         self.pred_len = configs.model.pred_len  # 30일 미래예측
+        self.individual = configs.model.individual
+        self.channels = configs.model.channels
 
         # Decompsition Kernel Size
         kernel_size = 25
         self.decompsition = SeriesDecomp(kernel_size)
-        self.individual = configs.model.individual
-        self.channels = configs.model.channels
 
         if self.individual:
             self.Linear_Seasonal = nn.ModuleList()
@@ -93,6 +93,9 @@ class Model(nn.Module):
                                           dtype=seasonal_init.dtype).to(seasonal_init.device)
             trend_output = torch.zeros([trend_init.size(0), trend_init.size(1), self.pred_len],
                                        dtype=trend_init.dtype).to(trend_init.device)
+
+            # print(seasonal_init.shape, seasonal_output.shape, trend_init.shape, trend_output.shape)
+
             for i in range(self.channels):
                 seasonal_output[:, i, :] = self.Linear_Seasonal[i](seasonal_init[:, i, :])
                 trend_output[:, i, :] = self.Linear_Trend[i](trend_init[:, i, :])
@@ -102,3 +105,39 @@ class Model(nn.Module):
 
         x = seasonal_output + trend_output
         return x.permute(0, 2, 1)  # to [Batch, Output length, Channel]
+
+
+class NLinear(nn.Module):
+    """
+    Normalization-Linear
+    """
+
+    def __init__(self, configs):
+        super(NLinear, self).__init__()
+        self.seq_len = configs.model.seq_len  # 60일간 데이터로
+        self.pred_len = configs.model.pred_len  # 30일 미래예측
+        self.individual = configs.model.individual
+        self.channels = configs.model.channels
+        # Use this line if you want to visualize the weights
+        # self.Linear.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))
+
+        if self.individual:
+            self.Linear = nn.ModuleList()
+            for i in range(self.channels):
+                self.Linear.append(nn.Linear(self.seq_len, self.pred_len))
+        else:
+            self.Linear = nn.Linear(self.seq_len, self.pred_len)
+
+    def forward(self, x):
+        # x: [Batch, Input length, Channel]
+        seq_last = x[:, -1:, :].detach()
+        x = x - seq_last
+        if self.individual:
+            output = torch.zeros([x.size(0), self.pred_len, x.size(2)], dtype=x.dtype).to(x.device)
+            for i in range(self.channels):
+                output[:, :, i] = self.Linear[i](x[:, :, i])
+            x = output
+        else:
+            x = self.Linear(x.permute(0, 2, 1)).permute(0, 2, 1)
+        x = x + seq_last
+        return x  # [Batch, Output length, Channel]
