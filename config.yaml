@@ -1,8 +1,8 @@
 model:
   seq_len: 60
   pred_len: 30
-  individual: False
-  channels: 7
+  individual: True
+  channels: 1
 
 ---
 train:
@@ -12,7 +12,7 @@ train:
   adam: 0.00001
   summary_interval: 100
   checkpoint_interval: 500
-  step_limit: 10000
+  step_limit: 50000
 
 ---
 data:
