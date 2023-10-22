@@ -29,15 +29,15 @@ class Train:
     def get_criterion(self):
         # Berhu_loss
         def berhu_loss(y_pred, y_true):
-            delta = 0.2  # default 0.2
+            delta = 0.1  # default 0.2
             abs_error = torch.abs(y_pred - y_true)
             c = delta * torch.max(abs_error).detach()
-            return torch.mean(torch.where(abs_error <= c, abs_error, (abs_error ** 2 + c ** 2 / (2 * c))))
+            return torch.mean(torch.where(abs_error <= c, abs_error, (torch.sqrt(abs_error ** 2 + c ** 2) / (2 * c))))
 
         # criterion = nn.HuberLoss(delta=1)
         # criterion = berhu_loss
-        criterion = nn.L1Loss()
-        # criterion = nn.MSELoss()
+        # criterion = nn.L1Loss()
+        criterion = nn.MSELoss()
 
         return criterion
 
@@ -62,7 +62,7 @@ class Train:
 
                 result = self.model(train_seq)
                 # RMSE = torch.sqrt(criterion(x, y))
-                # loss = torch.sqrt(criterion(result, train_pred))
+                # loss = torch.sqrt(self.criterion(result, train_pred))
                 loss = self.criterion(result, train_pred)
 
                 self.optimizer.zero_grad()
