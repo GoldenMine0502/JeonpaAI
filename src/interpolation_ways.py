@@ -1,11 +1,13 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
+
 class InterpolationAllAverage:
     def __init__(self, configs):
         self.config = configs
         self.seq_len = configs.model.seq_len
         self.pred_len = configs.model.pred_len
+
     def get_dataset(self, flux, test=False):
         mean_flux = np.nanmean(flux)
         flux[np.isnan(flux)] = mean_flux
@@ -31,6 +33,8 @@ class InterpolationAllAverage:
                 dataset.append((train_seq, train_pred))
 
         return dataset
+
+
 # 모든 Nan을 전체 평균으로 대치
 
 class InterpolationRemoveLongMissingValue:
@@ -46,7 +50,6 @@ class InterpolationRemoveLongMissingValue:
     def get_dataset(self, flux, test=False):
         dataset = []
 
-        mean_flux = np.nanmean(flux)
 
         if test:
             for idx in range(len(flux) - self.seq_len + 1):
@@ -56,12 +59,14 @@ class InterpolationRemoveLongMissingValue:
         else:
             for idx in range(len(flux) - self.seq_len - self.pred_len + 1):
                 train_seq = flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
+                # print(train_seq)
                 train_pred = flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
 
                 # 데이터가 연속으로 결측치면 제거
                 count = 0
                 to_add = True
                 for seq_value in np.concatenate((train_seq, train_pred)):
+                    # print(seq_value)
                     if np.isnan(seq_value):
                         count += 1
                     else:
@@ -71,13 +76,45 @@ class InterpolationRemoveLongMissingValue:
                         to_add = False
                         break
 
+                # print(to_add)
+
                 if to_add:
-                    self.replace_nan_to_mean(train_seq, mean_flux)
-                    self.replace_nan_to_mean(train_pred, mean_flux)
                     dataset.append((train_seq, train_pred))
+
+            linear_interpolation(flux)
+            # mean_flux = np.nanmean(flux)
+
+            # for train_seq, train_pred in dataset:
+            #     # batch_mean_seq = np.nanmean(train_seq)
+            #     # batch_mean_pred = np.nanmean(train_pred)
+            #     batch_mean = np.nanmean(np.concatenate([train_seq, train_pred]))
+            #     self.replace_nan_to_mean(train_seq, batch_mean)
+            #     self.replace_nan_to_mean(train_pred, batch_mean)
+            #     # self.replace_nan_to_mean(train_seq, mean_flux)
+            #     # self.replace_nan_to_mean(train_pred, mean_flux)
 
         return dataset
 
+
+def linear_interpolation(flux):
+    last_nan = None
+    for i, data in enumerate(flux):
+        if np.isnan(data):
+            if last_nan is None:
+                last_nan = i
+        else:
+            if last_nan is not None:
+                first_index = last_nan - 1
+                last_index = i
+
+                first_value = flux[last_nan - 1].copy()
+                last_value = flux[i].copy()
+
+                for j in range(last_nan - 1, i + 1):
+                    flux[j] = first_value + (last_value - first_value) / (last_index - first_index + 1) * (j - first_index + 1)
+                last_nan = None
+
+                # print(last_value, flux[i], (last_index - first_index + 1), (i - first_index + 1))
 
 class InterpolationPoly:
     def __init__(self, configs, pass_count=10):
