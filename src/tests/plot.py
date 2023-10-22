@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from configs import Config
 from sklearn.impute import KNNImputer
 from scipy.interpolate import interp1d
-# from scipy.interpolate import make_interp_spline, BSpline
+from scipy.interpolate import make_interp_spline, BSpline, CubicSpline
 
 root_dir = Path(os.getcwd()).parent.absolute()
 print(f"root directory: {root_dir}")
@@ -17,17 +17,35 @@ config = Config(config_path)
 datalist = [(f'{root_dir}/{config.data.trainset}', 'r'), ]
 
 
+def interpolate_cubic_spline(flux):
+    x = []
+    y = []
+    nans = np.isnan(flux)
+
+    for i in range(flux):
+        if not nans[i]:
+            x.append(i)
+            y.append(flux[i])
+
+    f = CubicSpline(x, y, bc_type='natural')
+
+    flux = f(np.arange(len(flux)))
+
+    return flux
+
+
 for data, color in datalist:
     flux = np.array(pd.read_csv(data)['flux'])
 
-    imputer = KNNImputer(n_neighbors=90)
-    x = np.arange(len(flux)).copy().reshape(-1, 1)
-    y = flux.copy().reshape(1, -1)
-    dataframe = pd.DataFrame({'y': flux})
-    print(x.shape)
-    print(y.shape)
-    result = imputer.fit_transform(dataframe)
-    flux = result
+    flux = interpolate_cubic_spline(flux)
+    # imputer = KNNImputer(n_neighbors=90)
+    # x = np.arange(len(flux)).copy().reshape(-1, 1)
+    # y = flux.copy().reshape(1, -1)
+    # dataframe = pd.DataFrame({'y': flux})
+    # print(x.shape)
+    # print(y.shape)
+    # result = imputer.fit_transform(dataframe)
+    # flux = result
     # print(imputer.fit_transform(x, y))
 
     x = np.arange(len(flux))

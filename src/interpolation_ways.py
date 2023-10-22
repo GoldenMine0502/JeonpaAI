@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, CubicSpline
 from sklearn.impute import KNNImputer
+
 
 class InterpolationAllAverage:
     def __init__(self, configs):
@@ -139,6 +140,22 @@ def interpolate_knn(flux):
     # print(x.shape)
     # print(y.shape)
     flux = imputer.fit_transform(dataframe).copy().reshape(-1)
+    return flux
+
+def interpolate_cubic_spline(flux):
+    x = []
+    y = []
+    nans = np.isnan(flux)
+
+    for i in range(flux):
+        if not nans[i]:
+            x.append(i)
+            y.append(flux[i])
+
+    f = CubicSpline(x, y, bc_type='natural')
+
+    flux = f(np.arange(len(flux)))
+
     return flux
 
 class InterpolationPoly:
