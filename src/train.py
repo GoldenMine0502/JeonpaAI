@@ -6,6 +6,7 @@ import xlsxwriter
 from models.linears import *
 from models.dcrnn import DCRNNModel
 from models.crnn import CRNN
+from models.autoformer import AutoFormer
 from dataloader import create_dataloader, create_testloader
 
 
@@ -21,6 +22,7 @@ class Train:
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model = DLinear(self.config)
+
         # self.model = DCRNNModel(
         #     adj_mat=None,
         #     batch_size=config.train.batch_size,
@@ -35,6 +37,27 @@ class Train:
         #     filter_type=None
         # )
         # self.model = CRNN(self.config.model.seq_len, self.config.model.pred_len)
+
+        # python -u run.py \
+        #   --is_training 1 \
+        #   --root_path ./dataset/electricity/ \
+        #   --data_path electricity.csv \
+        #   --model_id ECL_96_96 \
+        #   --model Autoformer \
+        #   --data custom \
+        #   --features M \
+        #   --seq_len 96 \
+        #   --label_len 48 \
+        #   --pred_len 96 \
+        #   --e_layers 2 \
+        #   --d_layers 1 \
+        #   --factor 3 \
+        #   --enc_in 321 \
+        #   --dec_in 321 \
+        #   --c_out 321 \
+        #   --des 'Exp' \
+        #   --itr 1
+        # self.model = AutoFormer(config)
         self.model.to(self.device)
         self.optimizer = self.get_optimizer()
         self.criterion = self.get_criterion()

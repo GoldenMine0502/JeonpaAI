@@ -40,7 +40,7 @@ class InterpolationAllAverage:
 # 모든 Nan을 전체 평균으로 대치
 
 class InterpolationRemoveLongMissingValue:
-    def __init__(self, configs, pass_count=75):
+    def __init__(self, configs, pass_count=60):
         self.config = configs
         self.seq_len = configs.model.seq_len
         self.pred_len = configs.model.pred_len
