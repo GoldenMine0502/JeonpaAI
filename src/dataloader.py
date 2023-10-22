@@ -55,20 +55,21 @@ def create_testloader(configs, root_dir=None):
                       collate_fn=test_collate_fn,
                       batch_size=1, shuffle=False, num_workers=0)
 
-def get_data_from_path(configs, file_path, root_dir=None):
+def get_data_from_path(configs, file_path, test=False, root_dir=None):
     if root_dir is None:
         root_dir = Path(os.getcwd()).parent.absolute()
     # print(f"root directory: {root_dir}")
 
     dataset = pd.read_csv(f'{root_dir}/{file_path}')
-    # print(trainset)
+    # print(dataset)
 
     date = np.array(dataset['date'])
     flux = np.array(dataset['flux'])
 
-    interpolation_model = InterpolationRemoveLongMissingValue(configs)
+    interpolation_model = InterpolationRemoveLongMissingValue(configs, pass_count=20)
+    # interpolation_model = InterpolationPoly(configs)
 
-    flux = interpolation_model.get_dataset(flux)
+    flux = interpolation_model.get_dataset(flux, test)
 
     return date, flux
 
@@ -119,7 +120,8 @@ class JeonpaTestDataset(Dataset):
     def __init__(self, configs, root_dir=None):
         self.configs = configs
         self.seq_len = configs.model.seq_len
-        self.date, self.flux = get_data_from_path(configs, self.configs.data.testset, root_dir=root_dir)
+        self.date, self.flux = get_data_from_path(configs, self.configs.data.testset, test=True, root_dir=root_dir)
+        # print(self.flux)
 
     def __len__(self):
         # 입력, 출력 길이에 따라 사용할 수 있는 데이터의 양이 달라진다.
