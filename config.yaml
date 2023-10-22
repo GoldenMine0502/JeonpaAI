@@ -6,11 +6,11 @@ model:
 
 ---
 train:
-  batch_size: 4096
+  batch_size: 512
   num_workers: 0 # num_workers does not work
   optimizer: 'adam'
-  adam: 0.00001
-  summary_interval: 100
+  adam: 0.01
+  summary_interval: 1
   checkpoint_interval: 1000
   step_limit: 50000
 
