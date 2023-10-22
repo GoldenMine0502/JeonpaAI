@@ -59,8 +59,8 @@ def interpolate_knn(flux):
 for data, color in datalist:
     flux = np.array(pd.read_csv(data)['flux'])
 
-    flux = interpolate_cubic_spline(flux)
-    # flux = interpolate_knn(flux)
+    # flux = interpolate_cubic_spline(flux)
+    flux = interpolate_knn(flux)
     # imputer = KNNImputer(n_neighbors=90)
     # x = np.arange(len(flux)).copy().reshape(-1, 1)
     # y = flux.copy().reshape(1, -1)

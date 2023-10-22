@@ -67,6 +67,8 @@ class DLinear(nn.Module):
 
         mid = 120
 
+        self.linears = [self.seq_len, mid, mid, mid, mid, self.pred_len]
+
         if self.individual:
             self.Linear_Seasonal = nn.ModuleList()
             self.Linear_Trend = nn.ModuleList()
@@ -80,17 +82,27 @@ class DLinear(nn.Module):
                     (1 / self.seq_len) * torch.ones([self.pred_len, self.seq_len]))
                 self.Linear_Decoder.append(nn.Linear(self.seq_len, self.pred_len))
         else:
-            self.Linear_Seasonal = nn.Linear(self.seq_len, mid)
-            self.Linear_Trend = nn.Linear(self.seq_len, mid)
-            self.Linear_Decoder = nn.Linear(self.seq_len, mid)
-            self.Linear_Seasonal.weight = nn.Parameter((1 / self.seq_len) * torch.ones([mid, self.seq_len]))
-            self.Linear_Trend.weight = nn.Parameter((1 / self.seq_len) * torch.ones([mid, self.seq_len]))
+            self.Linear_Seasonal = list()
+            self.Linear_Trend = list()
+            self.Linear_Decoder = list()
 
-            self.Linear_Seasonal2 = nn.Linear(mid, self.pred_len)
-            self.Linear_Trend2 = nn.Linear(mid, self.pred_len)
-            self.Linear_Decoder2 = nn.Linear(mid, self.pred_len)
-            self.Linear_Seasonal2.weight = nn.Parameter((1 / mid) * torch.ones([self.pred_len, mid]))
-            self.Linear_Trend2.weight = nn.Parameter((1 / mid) * torch.ones([self.pred_len, mid]))
+            for i in range(len(self.linears) - 1):
+                start = self.linears[i]
+                end = self.linears[i + 1]
+                Linear_Seasonal = nn.Linear(start, end)
+                Linear_Trend = nn.Linear(start, end)
+                Linear_Decoder = nn.Linear(start, end)
+                Linear_Seasonal.weight = nn.Parameter((1 / start) * torch.ones([end, start]))
+                Linear_Trend.weight = nn.Parameter((1 / start) * torch.ones([end, start]))
+
+                self.add_module("Linear_Seasonal{}".format(i), Linear_Seasonal)
+                self.add_module("Linear_Trend{}".format(i), Linear_Trend)
+                self.add_module("Linear_Decoder{}".format(i), Linear_Decoder)
+
+                self.Linear_Seasonal.append(Linear_Seasonal)
+                self.Linear_Trend.append(Linear_Trend)
+                self.Linear_Decoder.append(Linear_Decoder)
+
 
     def forward(self, x):
         # x: [Batch, Input length, Channel]
@@ -108,10 +120,12 @@ class DLinear(nn.Module):
                 seasonal_output[:, i, :] = self.Linear_Seasonal[i](seasonal_init[:, i, :])
                 trend_output[:, i, :] = self.Linear_Trend[i](trend_init[:, i, :])
         else:
-            seasonal_output = self.Linear_Seasonal(seasonal_init)
-            seasonal_output = self.Linear_Seasonal2(seasonal_output)
-            trend_output = self.Linear_Trend(trend_init)
-            trend_output = self.Linear_Trend2(trend_output)
+            seasonal_output = seasonal_init
+            trend_output = trend_init
+
+            for i in range(len(self.linears) - 1):
+                seasonal_output = self.Linear_Seasonal[i](seasonal_output)
+                trend_output = self.Linear_Trend[i](trend_output)
 
         x = seasonal_output + trend_output
         return x.permute(0, 2, 1)  # to [Batch, Output length, Channel]

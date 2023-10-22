@@ -40,7 +40,7 @@ class InterpolationAllAverage:
 # 모든 Nan을 전체 평균으로 대치
 
 class InterpolationRemoveLongMissingValue:
-    def __init__(self, configs, pass_count=45):
+    def __init__(self, configs, pass_count=75):
         self.config = configs
         self.seq_len = configs.model.seq_len
         self.pred_len = configs.model.pred_len
@@ -73,8 +73,8 @@ class InterpolationRemoveLongMissingValue:
                     # print(seq_value)
                     if np.isnan(seq_value):
                         count += 1
-                    else:
-                        count = 0
+                    # else:
+                    #     count = 0
 
                     if count >= self.pass_count:
                         to_add = False
