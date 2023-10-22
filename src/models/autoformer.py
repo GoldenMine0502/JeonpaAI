@@ -515,58 +515,58 @@ class AutoFormer(nn.Module):
         # Thus, we can discard the position embedding of transformers.
         self.enc_embedding = DataEmbedding_wo_pos(
             configs.model.enc_in,
-            configs.d_model,
-            configs.embed,
-            configs.freq,
-            configs.dropout)
+            configs.model.d_model,
+            configs.model.embed,
+            configs.model.freq,
+            configs.model.dropout)
 
         self.dec_embedding = DataEmbedding_wo_pos(
-            configs.dec_in,
-            configs.d_model,
-            configs.embed,
-            configs.freq,
-            configs.dropout)
+            configs.model.dec_in,
+            configs.model.d_model,
+            configs.model.embed,
+            configs.model.freq,
+            configs.model.dropout)
 
         # Encoder
         self.encoder = Encoder(
             [
                 EncoderLayer(
                     AutoCorrelationLayer(
-                        AutoCorrelation(False, configs.factor, attention_dropout=configs.dropout,
-                                        output_attention=configs.output_attention),
-                        configs.d_model, configs.n_heads),
-                    configs.d_model,
-                    configs.d_ff,
-                    moving_avg=configs.moving_avg,
-                    dropout=configs.dropout,
-                    activation=configs.activation
-                ) for l in range(configs.e_layers)
+                        AutoCorrelation(False, configs.model.factor, attention_dropout=configs.model.dropout,
+                                        output_attention=configs.model.output_attention),
+                        configs.model.d_model, configs.model.n_heads),
+                    configs.model.d_model,
+                    configs.model.d_ff,
+                    moving_avg=configs.model.moving_avg,
+                    dropout=configs.model.dropout,
+                    activation=configs.model.activation
+                ) for l in range(configs.model.e_layers)
             ],
-            norm_layer=my_Layernorm(configs.d_model)
+            norm_layer=my_Layernorm(configs.model.d_model)
         )
         # Decoder
         self.decoder = Decoder(
             [
                 DecoderLayer(
                     AutoCorrelationLayer(
-                        AutoCorrelation(True, configs.factor, attention_dropout=configs.dropout,
+                        AutoCorrelation(True, configs.model.factor, attention_dropout=configs.model.dropout,
                                         output_attention=False),
-                        configs.d_model, configs.n_heads),
+                        configs.model.d_model, configs.model.n_heads),
                     AutoCorrelationLayer(
-                        AutoCorrelation(False, configs.factor, attention_dropout=configs.dropout,
+                        AutoCorrelation(False, configs.model.factor, attention_dropout=configs.model.dropout,
                                         output_attention=False),
-                        configs.d_model, configs.n_heads),
-                    configs.d_model,
-                    configs.c_out,
-                    configs.d_ff,
-                    moving_avg=configs.moving_avg,
-                    dropout=configs.dropout,
-                    activation=configs.activation,
+                        configs.model.d_model, configs.model.n_heads),
+                    configs.model.d_model,
+                    configs.model.c_out,
+                    configs.model.d_ff,
+                    moving_avg=configs.model.moving_avg,
+                    dropout=configs.model.dropout,
+                    activation=configs.model.activation,
                 )
-                for l in range(configs.d_layers)
+                for l in range(configs.model.d_layers)
             ],
-            norm_layer=my_Layernorm(configs.d_model),
-            projection=nn.Linear(configs.d_model, configs.c_out, bias=True)
+            norm_layer=my_Layernorm(configs.model.d_model),
+            projection=nn.Linear(configs.model.d_model, configs.model.c_out, bias=True)
         )
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec,

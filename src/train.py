@@ -12,10 +12,11 @@ from dataloader import create_dataloader, create_testloader
 
 class Train:
 
-    def __init__(self, config, hp_str, root_dir=None):
+    def __init__(self, config, hp_str, writer, root_dir=None):
         self.config = config
         self.hp_str = hp_str
         self.root_dir = root_dir
+        self.writer = writer
         self.trainloader = create_dataloader(config, True, root_dir=root_dir)
         self.validationloader = create_dataloader(config, False, root_dir=root_dir)
         self.testloader = create_testloader(config, root_dir=root_dir)
@@ -118,13 +119,17 @@ class Train:
 
             step += 1
 
+            self.writer.write_train(step, loss)
             # write loss to tensorboard
             if step % self.config.train.summary_interval == 0:
-                # writer.log_training(loss, step)
+
                 val_loss = self.validate()
                 val_loss_rmse = self.validate(rmse=True)
-                print("Wrote summary at step %d, loss: %f, val_loss: %f, val_rmse_loss: %f" % (
-                step, loss, val_loss, val_loss_rmse))
+                self.writer.write_val(step, val_loss, val_loss_rmse)
+
+                print("Wrote summary at step %d, loss: %f, val_loss: %f, val_rmse_loss: %f"
+                      % (step, loss, val_loss, val_loss_rmse))
+
             # 1. save checkpoint file to resume training
             # 2. evaluate and save sample to tensorboard
             if step % self.config.train.checkpoint_interval == 0:

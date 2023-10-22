@@ -83,7 +83,9 @@ class DLinear(nn.Module):
                 self.Linear_Decoder.append(nn.Linear(self.seq_len, self.pred_len))
         else:
             self.Linear_Seasonal = list()
+            self.Linear_Seasonal_Dropout = list()
             self.Linear_Trend = list()
+            self.Linear_Trend_Dropout = list()
             self.Linear_Decoder = list()
 
             for i in range(len(self.linears) - 1):
@@ -123,7 +125,7 @@ class DLinear(nn.Module):
             seasonal_output = seasonal_init
             trend_output = trend_init
 
-            for i in range(len(self.linears) - 1):
+            for i in range(0, len(self.linears) - 1):
                 seasonal_output = self.Linear_Seasonal[i](seasonal_output)
                 trend_output = self.Linear_Trend[i](trend_output)
 

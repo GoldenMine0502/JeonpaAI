@@ -5,18 +5,28 @@ model:
   channels: 1
   moving_avg: 15
   output_attention: False
-  enc_in: 321
-  dec_in: 321
-
+  enc_in: 7
+  dec_in: 7
+  d_model: 512
+  embed: timeF  # options:[timeF, fixed, learned]
+  freq: d  # [s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly]
+  dropout: 0.025  # default = 0.05
+  factor: 1
+  n_heads: 8
+  d_ff: 2048
+  activation: relu
+  c_out: 7
+  e_layers: 2
+  d_layers: 1
 ---
 train:
   batch_size: 1024
   num_workers: 0 # num_workers does not work
   optimizer: 'adam'
-  adam: 0.00005
+  adam: 0.0001
   summary_interval: 250
   checkpoint_interval: 1000
-  step_limit: 15000
+  step_limit: 30000
 
 ---
 data:
