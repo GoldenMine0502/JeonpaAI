@@ -1,12 +1,9 @@
 import numpy as np
 import math
-import torch
-import torch.nn as nn
 import os
 import xlsxwriter
 
-import dataloader
-from model import *
+from models.linears import *
 from dataloader import create_dataloader, create_testloader
 
 

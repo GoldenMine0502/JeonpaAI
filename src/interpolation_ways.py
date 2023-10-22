@@ -1,6 +1,7 @@
 import numpy as np
+import pandas as pd
 from scipy.interpolate import interp1d
-
+from sklearn.impute import KNNImputer
 
 class InterpolationAllAverage:
     def __init__(self, configs):
@@ -48,15 +49,17 @@ class InterpolationRemoveLongMissingValue:
         flux[np.isnan(flux)] = mean_flux
 
     def get_dataset(self, flux, test=False):
-        dataset = []
-
 
         if test:
+            dataset = []
             for idx in range(len(flux) - self.seq_len + 1):
                 test_seq = flux[idx:idx + self.seq_len][:, np.newaxis]
 
                 dataset.append(test_seq)
+
+            return dataset
         else:
+            fancy = []
             for idx in range(len(flux) - self.seq_len - self.pred_len + 1):
                 train_seq = flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
                 # print(train_seq)
@@ -78,11 +81,23 @@ class InterpolationRemoveLongMissingValue:
 
                 # print(to_add)
 
-                if to_add:
-                    dataset.append((train_seq, train_pred))
+                # if to_add:
+                fancy.append(to_add)
 
             linear_interpolation(flux)
+            # flux = interpolate_knn(flux)
+
+            dataset = []
+            for idx in range(len(flux) - self.seq_len - self.pred_len + 1):
+                train_seq = flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
+                # print(train_seq)
+                train_pred = flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
+
+                if fancy[idx]:
+                    dataset.append((train_seq, train_pred))
+
             # mean_flux = np.nanmean(flux)
+            # flux[np.isnan(flux)] = mean_flux
 
             # for train_seq, train_pred in dataset:
             #     # batch_mean_seq = np.nanmean(train_seq)
@@ -93,7 +108,7 @@ class InterpolationRemoveLongMissingValue:
             #     # self.replace_nan_to_mean(train_seq, mean_flux)
             #     # self.replace_nan_to_mean(train_pred, mean_flux)
 
-        return dataset
+            return dataset
 
 
 def linear_interpolation(flux):
@@ -116,8 +131,18 @@ def linear_interpolation(flux):
 
                 # print(last_value, flux[i], (last_index - first_index + 1), (i - first_index + 1))
 
+def interpolate_knn(flux):
+    imputer = KNNImputer(n_neighbors=45)
+    # x = np.arange(len(flux)).copy().reshape(-1, 1)
+    # y = flux.copy().reshape(1, -1)
+    dataframe = pd.DataFrame({'y': flux})
+    # print(x.shape)
+    # print(y.shape)
+    flux = imputer.fit_transform(dataframe).copy().reshape(-1)
+    return flux
+
 class InterpolationPoly:
-    def __init__(self, configs, pass_count=10):
+    def __init__(self, configs):
         self.config = configs
         self.seq_len = configs.model.seq_len
         self.pred_len = configs.model.pred_len
@@ -127,6 +152,37 @@ class InterpolationPoly:
         poly_interpolator = interp1d(np.arange(len(flux)), flux, kind='cubic')
         # 결측값 보간
         flux = poly_interpolator(np.arange(len(flux)))
+
+        dataset = []
+
+        if test:
+            for idx in range(len(flux) - self.seq_len + 1):
+                test_seq = flux[idx:idx + self.seq_len][:, np.newaxis]
+
+                dataset.append(test_seq)
+        else:
+            for idx in range(len(flux) - self.seq_len - self.pred_len + 1):
+                train_seq = flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
+                train_pred = flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
+
+                dataset.append((train_seq, train_pred))
+
+        return dataset
+
+class InterpolationKNN:
+    def __init__(self, configs):
+        self.config = configs
+        self.seq_len = configs.model.seq_len
+        self.pred_len = configs.model.pred_len
+
+    def get_dataset(self, flux, test):
+        imputer = KNNImputer(n_neighbors=45)
+        # x = np.arange(len(flux)).copy().reshape(-1, 1)
+        # y = flux.copy().reshape(1, -1)
+        dataframe = pd.DataFrame({'y': flux})
+        # print(x.shape)
+        # print(y.shape)
+        flux = imputer.fit_transform(dataframe).copy().reshape(-1)
 
         dataset = []
 
