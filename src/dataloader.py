@@ -29,7 +29,7 @@ def create_dataloader(configs, train, root_dir=None):
         return DataLoader(dataset=JeonpaDataset(configs, True, root_dir=root_dir),
                           batch_size=configs.train.batch_size,
                           shuffle=True,
-                          # num_workers=configs.train.num_workers,
+                          num_workers=configs.train.num_workers,
                           collate_fn=train_collate_fn,
                           # pin_memory=True,
                           # drop_last=True,
@@ -63,13 +63,15 @@ def get_data_from_path(configs, file_path, test=False, root_dir=None):
     dataset = pd.read_csv(f'{root_dir}/{file_path}')
     # print(dataset)
 
-    date = np.array(dataset['date'])
-    flux = np.array(dataset['flux'])
+    date = np.array(dataset['date']).copy()
+    flux = np.array(dataset['flux']).copy()
+    print('len before interpolation:', len(flux))
 
-    interpolation_model = InterpolationRemoveLongMissingValue(configs, pass_count=20)
+    interpolation_model = InterpolationRemoveLongMissingValue(configs, pass_count=30)
     # interpolation_model = InterpolationPoly(configs)
 
     flux = interpolation_model.get_dataset(flux, test)
+    print('len after interpolation:', len(flux))
 
     return date, flux
 
@@ -87,7 +89,7 @@ class JeonpaDataset(Dataset):
         # 학습데이터와 테스트데이터를 나눔.
         date, flux = get_data_from_path(configs, self.configs.data.trainset, root_dir=root_dir)
         split_index = int(len(flux) * self.split_rate)
-
+        # print(len(flux))
         self.train = flux[:split_index]
         self.test = flux[split_index:]
 
