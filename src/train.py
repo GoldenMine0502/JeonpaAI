@@ -59,9 +59,20 @@ class Train:
         #   --des 'Exp' \
         #   --itr 1
         # self.model = AutoFormer(config)
-        self.model.to(self.device)
         self.optimizer = self.get_optimizer()
         self.criterion = self.get_criterion()
+
+        local_rank = int(os.environ["LOCAL_RANK"])
+        print("local rank:", local_rank)
+
+        self.model = torch.nn.parallel.DistributedDataParallel(
+            self.model,
+            find_unused_parameters=True,
+            # device_ids=[local_rank],
+            # output_device=local_rank,
+        )
+
+        # self.model.to(self.device)
 
     def get_criterion(self):
         # Berhu_loss
@@ -88,8 +99,12 @@ class Train:
         step = 0
         # try:
         while True:
+            step += 1
+
             self.model.train()
             losses = []
+            self.trainloader.sampler.set_epoch(step)
+
             for train_seq, train_pred in self.trainloader:  # 요게 다 돌면 에포크
                 # CRNN
                 train_seq = train_seq.to(self.device)
@@ -116,8 +131,6 @@ class Train:
                     raise Exception("Loss exploded")
 
             loss = np.mean(losses)
-
-            step += 1
 
             self.writer.write_train(step, loss)
             # write loss to tensorboard

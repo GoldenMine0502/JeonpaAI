@@ -4,9 +4,10 @@ import torch
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, DistributedSampler
 from interpolation_ways import *
 import torch.nn.functional as F
+import torch.distributed as dist
 
 
 def create_dataloader(configs, train, root_dir=None):
@@ -26,19 +27,31 @@ def create_dataloader(configs, train, root_dir=None):
     #     return train_collate_fn(batch)
 
     if train:
-        return DataLoader(dataset=JeonpaDataset(configs, True, root_dir=root_dir),
+        dataset = JeonpaDataset(configs, True, root_dir=root_dir)
+        train_sampler = DistributedSampler(dataset)
+
+        return DataLoader(dataset=dataset,
                           batch_size=configs.train.batch_size,
-                          shuffle=True,
+                          # shuffle=True,
                           num_workers=configs.train.num_workers,
                           collate_fn=train_collate_fn,
+                          sampler=train_sampler,
                           # pin_memory=True,
                           # drop_last=True,
                           # sampler=None
                           )
     else:
-        return DataLoader(dataset=JeonpaDataset(configs, False, root_dir=root_dir),
+        dataset = JeonpaDataset(configs, False, root_dir=root_dir)
+        vali_sampler = DistributedSampler(dataset)
+
+        return DataLoader(dataset=dataset,
                           collate_fn=train_collate_fn,
-                          batch_size=1, shuffle=False, num_workers=0)
+
+                          batch_size=1,
+                          shuffle=False,
+                          num_workers=configs.train.num_workers,
+                          sampler=vali_sampler
+                          )
 
 
 def create_testloader(configs, root_dir=None):
@@ -54,6 +67,7 @@ def create_testloader(configs, root_dir=None):
     return DataLoader(dataset=JeonpaTestDataset(configs, root_dir=root_dir),
                       collate_fn=test_collate_fn,
                       batch_size=1, shuffle=False, num_workers=0)
+
 
 def get_data_from_path(configs, file_path, test=False, root_dir=None):
     if root_dir is None:
@@ -75,6 +89,7 @@ def get_data_from_path(configs, file_path, test=False, root_dir=None):
     print('len after interpolation:', len(flux))
 
     return date, flux
+
 
 class JeonpaDataset(Dataset):
     def __init__(self, configs, train, root_dir=None):
@@ -119,6 +134,7 @@ class JeonpaDataset(Dataset):
             # return validation_seq, validation_pred
             return self.test[idx]
 
+
 class JeonpaTestDataset(Dataset):
     def __init__(self, configs, root_dir=None):
         self.configs = configs
@@ -136,6 +152,7 @@ class JeonpaTestDataset(Dataset):
         # minus = self.seq_len - 1
         # return len(self.date) - minus  # or test_flux
         return len(self.flux)
+
     def __getitem__(self, idx):
         # train_seq = self.flux[idx:idx + self.seq_len][:, np.newaxis]
         return self.flux[idx]

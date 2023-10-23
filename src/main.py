@@ -1,8 +1,12 @@
 import os
+import torch
 from pathlib import Path
 from configs import Config
 from train import Train
 from tensorboardX import SummaryWriter
+
+import torch.distributed as dist
+dist.init_process_group(backend="gloo")
 
 # config
 root_dir = Path(os.getcwd()).absolute()
@@ -15,6 +19,8 @@ config = Config(config_path)
 with open(config_path, 'r') as f:
     hp_str = ''.join(f.readlines())
 
+torch.set_num_interop_threads(8)  # Inter-op parallelism
+torch.set_num_threads(8)  # Intra-op parallelism
 
 # writer
 class MyWriter(SummaryWriter):
@@ -37,3 +43,9 @@ writer = MyWriter(config, log_dir)
 # train
 train = Train(config, hp_str, writer, root_dir=root_dir)
 train.train()
+
+# torchrun
+#     --standalone
+#     --nnodes=1
+#     --nproc_per_node=$NUM_TRAINERS
+#     YOUR_TRAINING_SCRIPT.py
