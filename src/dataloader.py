@@ -72,10 +72,11 @@ def create_testloader(configs, root_dir=None):
         for train_date_seq, train_flux_seq, date in batch:
             train_seq_date_list.append(torch.from_numpy(train_date_seq).float())
             train_seq_flux_list.append(torch.from_numpy(train_flux_seq).float())
-            train_seq_flux_list.append(torch.from_numpy(date).float())
+            date_list.append(torch.from_numpy(date).float())
 
         train_seq_date_list = torch.stack(train_seq_date_list, dim=0)
         train_seq_flux_list = torch.stack(train_seq_flux_list, dim=0)
+        date_list = torch.stack(date_list, dim=0)
 
         return train_seq_date_list, train_seq_flux_list, date_list
 
