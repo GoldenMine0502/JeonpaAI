@@ -98,7 +98,7 @@ class Train:
 
     def _predict(self, batch_x, batch_y, batch_x_mark, batch_y_mark):
         # decoder input
-        dec_inp = torch.zeros_like(batch_y[:, -self.config.model.pred_len:, :]).float()
+        dec_inp = torch.zeros_like(batch_y[:, -self.config.model.pred_len:, :]).float().to(self.device)
         dec_inp = torch.cat([batch_y[:, :self.config.model.label_len, :], dec_inp], dim=1).float().to(self.device)
 
         # encoder - decoder
@@ -122,6 +122,7 @@ class Train:
         return outputs, batch_y
 
     def train(self):
+        print("Starting Train")
         step = 0
         # try:
         while True:
@@ -146,7 +147,7 @@ class Train:
 
                 # result = self.model(train_flux_seq)
                 result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
-                # RMSE = torch.sqrt(criterion(x, y))
+                # RMSE = torch.sqrt(criterion(x, y))x
                 # loss = torch.sqrt(self.criterion(result, train_pred))
                 loss = self.criterion(result, batch_y)
 
@@ -241,9 +242,10 @@ class Train:
             for test_date_seq, test_flux_seq, date in self.testloader:
                 test_date_seq = test_date_seq.to(self.device)
                 test_flux_seq = test_flux_seq.to(self.device)
+                date = date.to(self.device)
 
                 # test_seq = test_seq.squeeze(2).to(self.device)
-                test_flux_pred = torch.zeros((test_date_seq.size(dim=0), self.model.pred_len, self.config.model.channels))
+                test_flux_pred = torch.zeros((test_date_seq.size(dim=0), self.model.pred_len, self.config.model.channels)).to(self.device)
 
                 result, batch_y = self._predict(test_flux_seq, test_flux_pred, test_date_seq, date)
                 # result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)

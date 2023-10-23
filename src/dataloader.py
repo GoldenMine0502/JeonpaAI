@@ -57,7 +57,7 @@ def create_dataloader(configs, train, root_dir=None):
         return DataLoader(dataset=dataset,
                           collate_fn=train_collate_fn,
 
-                          batch_size=1,
+                          batch_size=64,
                           shuffle=False,
                           num_workers=configs.train.num_workers,
                           # sampler=vali_sampler
@@ -74,7 +74,7 @@ def create_testloader(configs, root_dir=None):
             train_seq_date_list.append(torch.from_numpy(train_date_seq).float())
             train_seq_flux_list.append(torch.from_numpy(train_flux_seq).float())
             date_list.append(torch.from_numpy(date).float())
-            print(train_seq_date_list[0].shape)
+            # print(train_seq_date_list[0].shape)
 
         train_seq_date_list = torch.stack(train_seq_date_list, dim=0)
         train_seq_flux_list = torch.stack(train_seq_flux_list, dim=0)

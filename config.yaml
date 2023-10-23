@@ -26,7 +26,7 @@ train:
   num_workers: 0 # num_workers does not work
   optimizer: 'adam'
   adam: 0.001
-  summary_interval: 50
+  summary_interval: 10
   checkpoint_interval: 100
   step_limit: 30000
 
