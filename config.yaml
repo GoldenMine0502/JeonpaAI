@@ -9,10 +9,10 @@ model:
   enc_in: 1
   dec_in: 1
   c_out: 1
-  d_model: 256
+  d_model: 512
   embed: timeF  # options:[timeF, fixed, learned]
   freq: d  # [s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly]
-  dropout: 0.0  # default = 0.05
+  dropout: 0.05  # default = 0.05
   factor: 1
   n_heads: 8
   d_ff: 2048
@@ -23,10 +23,10 @@ model:
   distil: True
 ---
 train:
-  batch_size: 256
+  batch_size: 512
   num_workers: 0 # num_workers does not work
   optimizer: 'adam'
-  adam: 0.0001
+  adam: 0.001
   summary_interval: 10
   checkpoint_interval: 100
   step_limit: 30000
@@ -35,7 +35,7 @@ train:
 data:
   trainset: 'dataset/ai_competition_train.csv'
   testset: 'dataset/ai_competition_test.csv'
-  split_rate: 0.98
+  split_rate: 0.95
 
 ---
 log:
