@@ -24,6 +24,7 @@ def create_dataloader(configs, train, root_dir=None):
             train_seq_flux_list.append(torch.from_numpy(train_seq).float())
             train_pred_date_list.append(torch.from_numpy(date_pred).float())
             train_pred_flux_list.append(torch.from_numpy(train_pred).float())
+            # print(train_seq_date_list[0].shape)
 
         train_seq_date_list = torch.stack(train_seq_date_list, dim=0)
         train_seq_flux_list = torch.stack(train_seq_flux_list, dim=0)
@@ -73,6 +74,7 @@ def create_testloader(configs, root_dir=None):
             train_seq_date_list.append(torch.from_numpy(train_date_seq).float())
             train_seq_flux_list.append(torch.from_numpy(train_flux_seq).float())
             date_list.append(torch.from_numpy(date).float())
+            print(train_seq_date_list[0].shape)
 
         train_seq_date_list = torch.stack(train_seq_date_list, dim=0)
         train_seq_flux_list = torch.stack(train_seq_flux_list, dim=0)
@@ -132,7 +134,7 @@ def get_data_from_path(configs, file_path, test=False, root_dir=None):
 
 
     # print(df_stamp)
-    # print(date)
+    # print(date[0])
 
     return date, flux
 
@@ -188,6 +190,7 @@ class JeonpaTestDataset(Dataset):
         self.configs = configs
         self.seq_len = configs.model.seq_len
         self.date, self.flux = get_data_from_path(configs, self.configs.data.testset, test=True, root_dir=root_dir)
+        # print(self.date[0].shxape)
         # print(self.flux)
 
     def __len__(self):
@@ -214,15 +217,16 @@ class JeonpaTestDataset(Dataset):
         months = []
         days = []
         weekdays = []
-        for i in range(30): # 예측 30개
-            if i == 0:
-                res = datetime.datetime(2023, 11, 30 + i)
+        for i in range(60):  # 예측 30개
+            if i <= 29:
+                res = datetime.datetime(2023, 11, i + 1)
             else:
-                res = datetime.datetime(2023, 12, i - 1)
+                # print(i)
+                res = datetime.datetime(2023, 12, i - 29)
 
             months.append(res.month)
             days.append(res.day)
-            weekdays.append(res.weekday)
+            weekdays.append(res.weekday())
 
         date = np.concatenate((np.array(months)[:, np.newaxis],
                                np.array(days)[:, np.newaxis],
@@ -231,5 +235,6 @@ class JeonpaTestDataset(Dataset):
                                # np.array(df_stamp.apply(lambda row: row.minute, 1))[:, np.newaxis]
                                ),
                               axis=1)
+        # print(date)
 
         return self.date[idx], self.flux[idx], date

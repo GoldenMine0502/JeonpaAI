@@ -142,7 +142,7 @@ class Train:
                 # train_pred = train_pred.squeeze(2).to(self.device)
                 # print("train_seq:", train_seq)
                 # print("train_pred:", train_pred)
-                # print(train_seq.shape, train_pred.shape)
+                # print(train_date_seq.shape, train_date_pred.shape)
 
                 # result = self.model(train_flux_seq)
                 result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
@@ -243,8 +243,10 @@ class Train:
                 test_flux_seq = test_flux_seq.to(self.device)
 
                 # test_seq = test_seq.squeeze(2).to(self.device)
-                zeros_pred = torch.zeros((test_date_seq.size(dim=0), self.model.pred_len, test_date_seq.size(dim=2)))
-                result, batch_y = self._predict(test_flux_seq, zeros_pred, test_date_seq, date)
+                test_flux_pred = torch.zeros((test_date_seq.size(dim=0), self.model.pred_len, self.config.model.channels))
+
+                result, batch_y = self._predict(test_flux_seq, test_flux_pred, test_date_seq, date)
+                # result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
                 self.write_csv(result, step)
 
     def write_csv(self, result, step):

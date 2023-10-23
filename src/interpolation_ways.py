@@ -52,13 +52,19 @@ class InterpolationRemoveLongMissingValue:
 
     def get_dataset(self, date, flux, test=False):
         if test:
-            dataset_flux = []
             dataset_date = []
+            dataset_flux = []
             for idx in range(len(flux) - self.seq_len + 1):
-                test_seq = flux[idx:idx + self.seq_len][:, np.newaxis]
-                test_date_seq = date[idx:idx + self.seq_len]
+                # test_seq = flux[idx:idx + self.seq_len][:, np.newaxis]
+                # test_date_seq = date[idx:idx + self.seq_len]
+                s_begin = idx
+                s_end = s_begin + self.seq_len
 
-                dataset_flux.append(test_seq)
+                test_flux_seq = flux[s_begin:s_end][:, np.newaxis]
+                # print(train_seq)
+                test_date_seq = date[s_begin:s_end]
+
+                dataset_flux.append(test_flux_seq)
                 dataset_date.append(test_date_seq)
 
             return dataset_date, dataset_flux

@@ -41,9 +41,11 @@ os.makedirs(log_dir, exist_ok=True)
 writer = MyWriter(config, log_dir)
 
 # train
+# torch.Size([1, 60, 1]) torch.Size([1, 60, 1]) torch.Size([1, 60, 3]) torch.Size([1, 30, 3])
+# torch.Size([256, 60, 1]) torch.Size([256, 60, 1]) torch.Size([256, 60, 3]) torch.Size([256, 60, 3])
 train = Train(config, hp_str, writer, root_dir=root_dir)
+# train.test(0)
 train.train()
-
 # torchrun
 #     --standalone
 #     --nnodes=1
