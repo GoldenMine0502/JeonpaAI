@@ -244,7 +244,7 @@ class Train:
 
                 # test_seq = test_seq.squeeze(2).to(self.device)
                 zeros_pred = torch.zeros((test_date_seq.size(dim=0), self.model.pred_len, test_date_seq.size(dim=2)))
-                result, label_y = self._predict(test_flux_seq, zeros_pred, test_date_seq, date)
+                result, batch_y = self._predict(test_flux_seq, zeros_pred, test_date_seq, date)
                 self.write_csv(result, step)
 
     def write_csv(self, result, step):
