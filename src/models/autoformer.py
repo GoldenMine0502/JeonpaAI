@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+
 class my_Layernorm(nn.Module):
     """
     Special designed layernorm for the seasonal part

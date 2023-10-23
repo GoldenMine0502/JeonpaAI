@@ -7,6 +7,7 @@ from models.linears import *
 from models.dcrnn import DCRNNModel
 from models.crnn import CRNN
 from models.autoformer import AutoFormer
+from models.informer import Informer
 from dataloader import create_dataloader, create_testloader
 
 
@@ -59,7 +60,8 @@ class Train:
         #   --c_out 321 \
         #   --des 'Exp' \
         #   --itr 1
-        self.model = AutoFormer(config)
+        # self.model = AutoFormer(config)
+        self.model = Informer(config)
         self.optimizer = self.get_optimizer()
         self.criterion = self.get_criterion()
 
@@ -78,7 +80,7 @@ class Train:
     def get_criterion(self):
         # Berhu_loss
         def berhu_loss(y_pred, y_true):
-            delta = 0.1  # default 0.2
+            delta = 0.2  # default 0.2
             abs_error = torch.abs(y_pred - y_true)
             c = delta * torch.max(abs_error).detach()
             return torch.mean(torch.where(abs_error <= c, abs_error, (torch.sqrt(abs_error ** 2 + c ** 2) / (2 * c))))
