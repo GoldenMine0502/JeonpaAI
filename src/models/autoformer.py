@@ -395,9 +395,9 @@ class TokenEmbedding(nn.Module):
                 nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='leaky_relu')
 
     def forward(self, x):
-        print("TokenEmbedding before:", x.shape)
+        # print("TokenEmbedding before:", x.shape)
         x = self.tokenConv(x.permute(0, 2, 1)).transpose(1, 2)
-        print("TokenEmbedding after:", x.shape)
+        # print("TokenEmbedding after:", x.shape)
         return x
 
 
@@ -449,7 +449,7 @@ class TemporalEmbedding(nn.Module):
         month_x = self.month_embed(x[:, :, 0])
 
         res = hour_x + weekday_x + day_x + month_x + minute_x
-        print("TemporalEmbedding:", res.shape)
+        # print("TemporalEmbedding:", res.shape)
 
         return res
 
@@ -463,7 +463,10 @@ class TimeFeatureEmbedding(nn.Module):
         self.embed = nn.Linear(d_inp, d_model, bias=False)
 
     def forward(self, x):
-        return self.embed(x)
+        # print("TimeFeatureEmbedding before:", x.shape)
+        x = self.embed(x)
+        # print("TimeFeatureEmbedding after:", x.shape)
+        return x
 
 
 class DataEmbedding(nn.Module):
@@ -488,13 +491,13 @@ class DataEmbedding_wo_pos(nn.Module):
 
         self.value_embedding = TokenEmbedding(c_in=c_in, d_model=d_model)
         self.position_embedding = PositionalEmbedding(d_model=d_model)
-        self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type,
-                                                    freq=freq) if embed_type != 'timeF' else TimeFeatureEmbedding(
-            d_model=d_model, embed_type=embed_type, freq=freq)
+        self.temporal_embedding = \
+            TemporalEmbedding(d_model=d_model, embed_type=embed_type, freq=freq) if embed_type != 'timeF' \
+            else TimeFeatureEmbedding(d_model=d_model, embed_type=embed_type, freq=freq)
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x, x_mark):
-        print("DataEmbedding_wo_pos", x.shape, x_mark.shape if x_mark is not None else None)
+        # print("DataEmbedding_wo_pos: ", x.shape, x_mark.shape if x_mark is not None else None)
         x = self.value_embedding(x) + self.temporal_embedding(x_mark)
         return self.dropout(x)
 
@@ -578,19 +581,19 @@ class AutoFormer(nn.Module):
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec,
                 enc_self_mask=None, dec_self_mask=None, dec_enc_mask=None):
         # decomp init
-        print(x_enc.shape, x_dec.shape)
+        # print(x_enc.shape, x_dec.shape)
         mean = torch.mean(x_enc, dim=1).unsqueeze(1).repeat(1, self.pred_len, 1)
         zeros = torch.zeros([x_dec.shape[0], self.pred_len, x_dec.shape[2]], device=x_enc.device)
         seasonal_init, trend_init = self.decomp(x_enc)
-        print("decomp init:", seasonal_init.shape, trend_init.shape)
+        # print("decomp init:", trend_init.shape, seasonal_init.shape)
         # decoder input
-        trend_init = torch.cat([trend_init[:, -self.label_len:, :], mean], dim=1)
+        trend_init = torch.cat([trend_init[:, -self.label_len:, :], mean], dim=1) # label_len + pred_len
         seasonal_init = torch.cat([seasonal_init[:, -self.label_len:, :], zeros], dim=1)
-        print("decoder input:", trend_init.shape, seasonal_init.shape)
+        # print("decoder input:", trend_init.shape, seasonal_init.shape)
         # enc
         enc_out = self.enc_embedding(x_enc, x_mark_enc)
         enc_out, attns = self.encoder(enc_out, attn_mask=enc_self_mask)
-        print("enc:", enc_out.shape, seasonal_init.shape, x_mark_dec.shape)
+        # print("enc:", enc_out.shape, seasonal_init.shape, x_mark_dec.shape)
         # dec
         dec_out = self.dec_embedding(seasonal_init, x_mark_dec)
         seasonal_part, trend_part = self.decoder(dec_out, enc_out, x_mask=dec_self_mask, cross_mask=dec_enc_mask,

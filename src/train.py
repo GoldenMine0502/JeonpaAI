@@ -114,6 +114,7 @@ class Train:
 
                     # encoder - decoder
                     def _run_model():
+                        # print(batch_x.shape, batch_x_mark.shape, dec_inp.shape, batch_y_mark.shape, batch_y.shape)
                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                         if self.config.model.output_attention:
                             outputs = outputs[0]
