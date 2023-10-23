@@ -27,7 +27,7 @@ train:
   optimizer: 'adam'
   adam: 0.001
   summary_interval: 50
-  checkpoint_interval: 500
+  checkpoint_interval: 100
   step_limit: 30000
 
 ---
