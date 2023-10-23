@@ -238,10 +238,13 @@ class Train:
 
     def test(self, step):
         with torch.no_grad():
-            for test_seq in self.testloader:
-                test_seq = test_seq.to(self.device)
+            for test_date_seq, test_flux_seq, date in self.testloader:
+                test_date_seq = test_date_seq.to(self.device)
+                test_flux_seq = test_flux_seq.to(self.device)
+
                 # test_seq = test_seq.squeeze(2).to(self.device)
-                result = self.model(test_seq)
+                zeros_pred = torch.zeros((test_date_seq.size(dim=0), self.model.pred_len, test_date_seq.size(dim=2)))
+                result, label_y = self._predict(test_flux_seq, zeros_pred, test_date_seq, date)
                 self.write_csv(result, step)
 
     def write_csv(self, result, step):

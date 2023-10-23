@@ -67,14 +67,17 @@ def create_testloader(configs, root_dir=None):
     def test_collate_fn(batch):
         train_seq_date_list = list()
         train_seq_flux_list = list()
+        date_list = list()
 
-        for train_date_seq, train_flux_seq in batch:
+        for train_date_seq, train_flux_seq, date in batch:
             train_seq_date_list.append(torch.from_numpy(train_date_seq).float())
             train_seq_flux_list.append(torch.from_numpy(train_flux_seq).float())
+            train_seq_flux_list.append(torch.from_numpy(date).float())
 
         train_seq_date_list = torch.stack(train_seq_date_list, dim=0)
         train_seq_flux_list = torch.stack(train_seq_flux_list, dim=0)
-        return train_seq_date_list, train_seq_flux_list
+
+        return train_seq_date_list, train_seq_flux_list, date_list
 
     return DataLoader(dataset=JeonpaTestDataset(configs, root_dir=root_dir),
                       collate_fn=test_collate_fn,
@@ -110,19 +113,6 @@ def get_data_from_path(configs, file_path, test=False, root_dir=None):
     # print(df_stamp)
 
     df_stamp = df_stamp.apply(to_datetime)
-    # df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
-    # df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
-    # df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
-    # df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
-    # print(df_stamp)
-    # date = df_stamp.drop(['date']).values
-    # print(date)
-
-    # minute_x = self.minute_embed(x[:, :, 4]) if hasattr(self, 'minute_embed') else 0.
-    # hour_x = self.hour_embed(x[:, :, 3])
-    # weekday_x = self.weekday_embed(x[:, :, 2])
-    # day_x = self.day_embed(x[:, :, 1])
-    # month_x = self.month_embed(x[:, :, 0])
     date = np.concatenate((np.array(df_stamp.apply(lambda row: row.month, 1))[:, np.newaxis],
                            np.array(df_stamp.apply(lambda row: row.day, 1))[:, np.newaxis],
                            np.array(df_stamp.apply(lambda row: row.weekday(), 1))[:, np.newaxis],
@@ -208,8 +198,37 @@ class JeonpaTestDataset(Dataset):
         # total_train_len = dataset_len - self.seq_len - self.pred_len + 1
         # minus = self.seq_len - 1
         # return len(self.date) - minus  # or test_flux
+
         return len(self.flux)
 
     def __getitem__(self, idx):
         # train_seq = self.flux[idx:idx + self.seq_len][:, np.newaxis]
-        return self.date[idx], self.flux[idx]
+
+        # date = np.concatenate((np.array(df_stamp.apply(lambda row: row.month, 1))[:, np.newaxis],
+        #                        np.array(df_stamp.apply(lambda row: row.day, 1))[:, np.newaxis],
+        #                        np.array(df_stamp.apply(lambda row: row.weekday(), 1))[:, np.newaxis],
+        #                        # np.array(df_stamp.apply(lambda row: row.hour, 1))[:, np.newaxis],
+        #                        # np.array(df_stamp.apply(lambda row: row.minute, 1))[:, np.newaxis]
+        #                        ),
+        months = []
+        days = []
+        weekdays = []
+        for i in range(30): # 예측 30개
+            if i == 0:
+                res = datetime.datetime(2023, 11, 30 + i)
+            else:
+                res = datetime.datetime(2023, 12, i - 1)
+
+            months.append(res.month)
+            days.append(res.day)
+            weekdays.append(res.weekday)
+
+        date = np.concatenate((np.array(months)[:, np.newaxis],
+                               np.array(days)[:, np.newaxis],
+                               np.array(weekdays)[:, np.newaxis],
+                               # np.array(df_stamp.apply(lambda row: row.hour, 1))[:, np.newaxis],
+                               # np.array(df_stamp.apply(lambda row: row.minute, 1))[:, np.newaxis]
+                               ),
+                              axis=1)
+
+        return self.date[idx], self.flux[idx], date
