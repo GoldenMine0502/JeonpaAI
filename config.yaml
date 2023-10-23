@@ -25,9 +25,9 @@ train:
   batch_size: 256
   num_workers: 0 # num_workers does not work
   optimizer: 'adam'
-  adam: 0.0001
-  summary_interval: 1
-  checkpoint_interval: 1
+  adam: 0.001
+  summary_interval: 50
+  checkpoint_interval: 500
   step_limit: 30000
 
 ---
