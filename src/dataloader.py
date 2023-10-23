@@ -68,9 +68,9 @@ def create_testloader(configs, root_dir=None):
         train_seq_date_list = list()
         train_seq_flux_list = list()
 
-        for train_date_seq, train_seq in batch:
+        for train_date_seq, train_flux_seq in batch:
             train_seq_date_list.append(torch.from_numpy(train_date_seq).float())
-            train_seq_flux_list.append(torch.from_numpy(train_seq).float())
+            train_seq_flux_list.append(torch.from_numpy(train_flux_seq).float())
 
         train_seq_date_list = torch.stack(train_seq_date_list, dim=0)
         train_seq_flux_list = torch.stack(train_seq_flux_list, dim=0)
@@ -212,4 +212,4 @@ class JeonpaTestDataset(Dataset):
 
     def __getitem__(self, idx):
         # train_seq = self.flux[idx:idx + self.seq_len][:, np.newaxis]
-        return self.flux[idx]
+        return self.date[idx], self.flux[idx]

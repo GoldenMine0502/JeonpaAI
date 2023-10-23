@@ -22,6 +22,7 @@ class Train:
         self.testloader = create_testloader(config, root_dir=root_dir)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        # self.device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
         # self.model = DLinear(self.config)
 
         # self.model = DCRNNModel(
@@ -72,7 +73,7 @@ class Train:
         #     # output_device=local_rank,
         # )
 
-        # self.model.to(self.device)
+        self.model.to(self.device)
 
     def get_criterion(self):
         # Berhu_loss
@@ -95,6 +96,31 @@ class Train:
 
         return optimizer
 
+    def _predict(self, batch_x, batch_y, batch_x_mark, batch_y_mark):
+        # decoder input
+        dec_inp = torch.zeros_like(batch_y[:, -self.config.model.pred_len:, :]).float()
+        dec_inp = torch.cat([batch_y[:, :self.config.model.label_len, :], dec_inp], dim=1).float().to(self.device)
+
+        # encoder - decoder
+        def _run_model():
+            # print(batch_x.shape, batch_x_mark.shape, dec_inp.shape, batch_y_mark.shape, batch_y.shape)
+            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+            if self.config.model.output_attention:
+                outputs = outputs[0]
+            return outputs
+
+        # if self.args.use_amp:
+        #     with torch.cuda.amp.autocast():
+        #         outputs = _run_model()
+        # else:
+        outputs = _run_model()
+
+        f_dim = -1 if self.config.model.features == 'MS' else 0
+        outputs = outputs[:, -self.config.model.pred_len:, f_dim:]
+        batch_y = batch_y[:, -self.config.model.pred_len:, f_dim:].to(self.device)
+
+        return outputs, batch_y
+
     def train(self):
         step = 0
         # try:
@@ -107,33 +133,10 @@ class Train:
 
             for train_date_seq, train_flux_seq, train_date_pred, train_flux_pred in self.trainloader:  # 요게 다 돌면 에포크
             # for train_flux_seq, train_flux_pred in self.trainloader:
-                def _predict(batch_x, batch_y, batch_x_mark, batch_y_mark):
-                    # decoder input
-                    dec_inp = torch.zeros_like(batch_y[:, -self.config.model.pred_len:, :]).float()
-                    dec_inp = torch.cat([batch_y[:, :self.config.model.label_len, :], dec_inp], dim=1).float().to(self.device)
-
-                    # encoder - decoder
-                    def _run_model():
-                        # print(batch_x.shape, batch_x_mark.shape, dec_inp.shape, batch_y_mark.shape, batch_y.shape)
-                        outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                        if self.config.model.output_attention:
-                            outputs = outputs[0]
-                        return outputs
-
-                    # if self.args.use_amp:
-                    #     with torch.cuda.amp.autocast():
-                    #         outputs = _run_model()
-                    # else:
-                    outputs = _run_model()
-
-                    f_dim = -1 if self.config.model.features == 'MS' else 0
-                    outputs = outputs[:, -self.config.model.pred_len:, f_dim:]
-                    batch_y = batch_y[:, -self.config.model.pred_len:, f_dim:].to(self.device)
-
-                    return outputs, batch_y
-
                 # CRNN
+                train_date_seq = train_date_seq.to(self.device)
                 train_flux_seq = train_flux_seq.to(self.device)
+                train_date_pred = train_date_pred.to(self.device)
                 train_flux_pred = train_flux_pred.to(self.device)
                 # train_seq = train_seq.squeeze(2).to(self.device)
                 # train_pred = train_pred.squeeze(2).to(self.device)
@@ -142,7 +145,7 @@ class Train:
                 # print(train_seq.shape, train_pred.shape)
 
                 # result = self.model(train_flux_seq)
-                result, batch_y = _predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
+                result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
                 # RMSE = torch.sqrt(criterion(x, y))
                 # loss = torch.sqrt(self.criterion(result, train_pred))
                 loss = self.criterion(result, batch_y)
@@ -162,7 +165,6 @@ class Train:
             self.writer.write_train(step, loss)
             # write loss to tensorboard
             if step % self.config.train.summary_interval == 0:
-
                 val_loss = self.validate()
                 val_loss_rmse = self.validate(rmse=True)
                 self.writer.write_val(step, val_loss, val_loss_rmse)
@@ -198,19 +200,34 @@ class Train:
 
             criterion = nn.MSELoss() if rmse else self.criterion
 
-            for validation_seq, validation_pred in self.validationloader:
-                validation_seq = validation_seq.to(self.device)
-                validation_pred = validation_pred.to(self.device)
-                # validation_seq = validation_seq.squeeze(2).to(self.device)
-                # validation_pred = validation_pred.squeeze(2).to(self.device)
+            for train_date_seq, train_flux_seq, train_date_pred, train_flux_pred in self.validationloader:  # 요게 다 돌면 에포크
+            # for train_flux_seq, train_flux_pred in self.trainloader:
+                # CRNN
+                train_date_seq = train_date_seq.to(self.device)
+                train_flux_seq = train_flux_seq.to(self.device)
+                train_date_pred = train_date_pred.to(self.device)
+                train_flux_pred = train_flux_pred.to(self.device)
+                # train_seq = train_seq.squeeze(2).to(self.device)
+                # train_pred = train_pred.squeeze(2).to(self.device)
+                # print("train_seq:", train_seq)
+                # print("train_pred:", train_pred)
+                # print(train_seq.shape, train_pred.shape)
 
-                result = self.model(validation_seq)
+                # result = self.model(train_flux_seq)
+                result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
+            # for validation_seq, validation_pred in self.validationloader:
+            #     validation_seq = validation_seq.to(self.device)
+            #     validation_pred = validation_pred.to(self.device)
+            #     # validation_seq = validation_seq.squeeze(2).to(self.device)
+            #     # validation_pred = validation_pred.squeeze(2).to(self.device)
+            #
+            #     result = self.model(validation_seq)
                 # RMSE = torch.sqrt(criterion(x, y))
                 # loss = torch.sqrt(criterion(result, train_pred))
                 if rmse:
-                    loss = torch.sqrt(criterion(result, validation_pred))
+                    loss = torch.sqrt(criterion(result, batch_y))
                 else:
-                    loss = criterion(result, validation_pred)
+                    loss = criterion(result, batch_y)
                 loss = loss.item()
                 losses.append(loss)
 

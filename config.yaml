@@ -9,7 +9,7 @@ model:
   enc_in: 1
   dec_in: 1
   c_out: 1
-  d_model: 512
+  d_model: 256
   embed: timeF  # options:[timeF, fixed, learned]
   freq: d  # [s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly]
   dropout: 0.025  # default = 0.05
@@ -22,13 +22,13 @@ model:
   features: M
 ---
 train:
-  batch_size: 512
+  batch_size: 256
   num_workers: 0 # num_workers does not work
   optimizer: 'adam'
   adam: 0.0001
   summary_interval: 1
   checkpoint_interval: 10
-  step_limit: 300
+  step_limit: 3000
 
 ---
 data:
