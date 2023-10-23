@@ -10,7 +10,7 @@ class InterpolationAllAverage:
         self.seq_len = configs.model.seq_len
         self.pred_len = configs.model.pred_len
 
-    def get_dataset(self, flux, test=False):
+    def get_dataset(self, date, flux, test=False):
         mean_flux = np.nanmean(flux)
         flux[np.isnan(flux)] = mean_flux
 
@@ -49,16 +49,18 @@ class InterpolationRemoveLongMissingValue:
     def replace_nan_to_mean(self, flux, mean_flux):
         flux[np.isnan(flux)] = mean_flux
 
-    def get_dataset(self, flux, test=False):
-
+    def get_dataset(self, date, flux, test=False):
         if test:
-            dataset = []
+            dataset_flux = []
+            dataset_date = []
             for idx in range(len(flux) - self.seq_len + 1):
                 test_seq = flux[idx:idx + self.seq_len][:, np.newaxis]
+                test_date_seq = date[idx:idx + self.seq_len]
 
-                dataset.append(test_seq)
+                dataset_flux.append(test_seq)
+                dataset_date.append(test_date_seq)
 
-            return dataset
+            return dataset_date, dataset_flux
         else:
             fancy = []
             for idx in range(len(flux) - self.seq_len - self.pred_len + 1):
@@ -89,14 +91,18 @@ class InterpolationRemoveLongMissingValue:
             flux = interpolate_knn(flux)
             # flux = interpolate_cubic_spline(flux)
 
-            dataset = []
+            dataset_flux = []
+            dataset_date = []
             for idx in range(len(flux) - self.seq_len - self.pred_len + 1):
                 train_seq = flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
                 # print(train_seq)
                 train_pred = flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
+                train_date_seq = date[idx:idx + self.seq_len]
+                train_date_pred = date[idx + self.seq_len:idx + self.seq_len + self.pred_len]
 
                 if fancy[idx]:
-                    dataset.append((train_seq, train_pred))
+                    dataset_flux.append((train_seq, train_pred))
+                    dataset_date.append((train_date_seq, train_date_pred))
 
             # mean_flux = np.nanmean(flux)
             # flux[np.isnan(flux)] = mean_flux
@@ -110,7 +116,7 @@ class InterpolationRemoveLongMissingValue:
             #     # self.replace_nan_to_mean(train_seq, mean_flux)
             #     # self.replace_nan_to_mean(train_pred, mean_flux)
 
-            return dataset
+            return dataset_date, dataset_flux
 
 
 def linear_interpolation(flux):
@@ -178,7 +184,7 @@ class InterpolationPoly:
         self.seq_len = configs.model.seq_len
         self.pred_len = configs.model.pred_len
 
-    def get_dataset(self, flux, test):
+    def get_dataset(self, date, flux, test):
         # 다항식 보간 함수
         poly_interpolator = interp1d(np.arange(len(flux)), flux, kind='cubic')
         # 결측값 보간

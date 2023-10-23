@@ -5,8 +5,8 @@ from configs import Config
 from train import Train
 from tensorboardX import SummaryWriter
 
-import torch.distributed as dist
-dist.init_process_group(backend="gloo")
+# import torch.distributed as dist
+# dist.init_process_group(backend="gloo")
 
 # config
 root_dir = Path(os.getcwd()).absolute()
@@ -19,8 +19,8 @@ config = Config(config_path)
 with open(config_path, 'r') as f:
     hp_str = ''.join(f.readlines())
 
-torch.set_num_interop_threads(8)  # Inter-op parallelism
-torch.set_num_threads(8)  # Intra-op parallelism
+# torch.set_num_interop_threads(8)  # Inter-op parallelism
+# torch.set_num_threads(8)  # Intra-op parallelism
 
 # writer
 class MyWriter(SummaryWriter):

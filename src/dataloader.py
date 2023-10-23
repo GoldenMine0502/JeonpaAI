@@ -1,3 +1,4 @@
+import datetime
 import os
 import glob
 import torch
@@ -12,37 +13,45 @@ import torch.distributed as dist
 
 def create_dataloader(configs, train, root_dir=None):
     def train_collate_fn(batch):
-        train_seq_list = list()
-        train_pred_list = list()
+        train_seq_date_list = list()
+        train_seq_flux_list = list()
+        train_pred_date_list = list()
+        train_pred_flux_list = list()
 
-        for train_seq, train_pred in batch:
-            train_seq_list.append(torch.from_numpy(train_seq).float())
-            train_pred_list.append(torch.from_numpy(train_pred).float())
+        # for train_seq, train_pred in batch:
+        for (date_seq, date_pred), (train_seq, train_pred) in batch:
+            train_seq_date_list.append(torch.from_numpy(date_seq).float())
+            train_seq_flux_list.append(torch.from_numpy(train_seq).float())
+            train_pred_date_list.append(torch.from_numpy(date_pred).float())
+            train_pred_flux_list.append(torch.from_numpy(train_pred).float())
 
-        train_seq_list = torch.stack(train_seq_list, dim=0)
-        train_pred_list = torch.stack(train_pred_list, dim=0)
-        return train_seq_list, train_pred_list
+        train_seq_date_list = torch.stack(train_seq_date_list, dim=0)
+        train_seq_flux_list = torch.stack(train_seq_flux_list, dim=0)
+        train_pred_date_list = torch.stack(train_pred_date_list, dim=0)
+        train_pred_flux_list = torch.stack(train_pred_flux_list, dim=0)
+        return train_seq_date_list, train_seq_flux_list, train_pred_date_list, train_pred_flux_list
+        # return train_seq_flux_list, train_pred_flux_list
 
     # def validation_collate_fn(batch):
     #     return train_collate_fn(batch)
 
     if train:
         dataset = JeonpaDataset(configs, True, root_dir=root_dir)
-        train_sampler = DistributedSampler(dataset)
+        # train_sampler = DistributedSampler(dataset)
 
         return DataLoader(dataset=dataset,
                           batch_size=configs.train.batch_size,
                           # shuffle=True,
                           num_workers=configs.train.num_workers,
                           collate_fn=train_collate_fn,
-                          sampler=train_sampler,
+                          # sampler=train_sampler,
                           # pin_memory=True,
                           # drop_last=True,
                           # sampler=None
                           )
     else:
         dataset = JeonpaDataset(configs, False, root_dir=root_dir)
-        vali_sampler = DistributedSampler(dataset)
+        # vali_sampler = DistributedSampler(dataset)
 
         return DataLoader(dataset=dataset,
                           collate_fn=train_collate_fn,
@@ -50,19 +59,22 @@ def create_dataloader(configs, train, root_dir=None):
                           batch_size=1,
                           shuffle=False,
                           num_workers=configs.train.num_workers,
-                          sampler=vali_sampler
+                          # sampler=vali_sampler
                           )
 
 
 def create_testloader(configs, root_dir=None):
     def test_collate_fn(batch):
-        train_seq_list = list()
+        train_seq_date_list = list()
+        train_seq_flux_list = list()
 
-        for train_seq in batch:
-            train_seq_list.append(torch.from_numpy(train_seq).float())
+        for train_date_seq, train_seq in batch:
+            train_seq_date_list.append(torch.from_numpy(train_date_seq).float())
+            train_seq_flux_list.append(torch.from_numpy(train_seq).float())
 
-        train_seq_list = torch.stack(train_seq_list, dim=0)
-        return train_seq_list
+        train_seq_date_list = torch.stack(train_seq_date_list, dim=0)
+        train_seq_flux_list = torch.stack(train_seq_flux_list, dim=0)
+        return train_seq_date_list, train_seq_flux_list
 
     return DataLoader(dataset=JeonpaTestDataset(configs, root_dir=root_dir),
                       collate_fn=test_collate_fn,
@@ -77,16 +89,59 @@ def get_data_from_path(configs, file_path, test=False, root_dir=None):
     dataset = pd.read_csv(f'{root_dir}/{file_path}')
     # print(dataset)
 
-    date = np.array(dataset['date']).copy()
-    flux = np.array(dataset['flux']).copy()
+    flux = np.array(dataset['flux'])
     print('len before interpolation:', len(flux))
+
+    def to_datetime(str):
+        if type(str) is int:
+            # 그냥 2023년 10/11월이라 하자.
+            # print(str)
+            if str <= 31:
+                res = datetime.datetime(2023, 10, str)
+            else:
+                res = datetime.datetime(2023, 11, str - 31)
+        else:
+            split = str.split('/')
+            res = datetime.datetime(2000 + int(split[2]), int(split[0]), int(split[1]))
+        return res
+
+    # print(dataset)
+    df_stamp = dataset['date']
+    # print(df_stamp)
+
+    df_stamp = df_stamp.apply(to_datetime)
+    # df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
+    # df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
+    # df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
+    # df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
+    # print(df_stamp)
+    # date = df_stamp.drop(['date']).values
+    # print(date)
+
+    # minute_x = self.minute_embed(x[:, :, 4]) if hasattr(self, 'minute_embed') else 0.
+    # hour_x = self.hour_embed(x[:, :, 3])
+    # weekday_x = self.weekday_embed(x[:, :, 2])
+    # day_x = self.day_embed(x[:, :, 1])
+    # month_x = self.month_embed(x[:, :, 0])
+    date = np.concatenate((np.array(df_stamp.apply(lambda row: row.month, 1))[:, np.newaxis],
+                           np.array(df_stamp.apply(lambda row: row.day, 1))[:, np.newaxis],
+                           np.array(df_stamp.apply(lambda row: row.weekday(), 1))[:, np.newaxis],
+                           # np.array(df_stamp.apply(lambda row: row.hour, 1))[:, np.newaxis],
+                           # np.array(df_stamp.apply(lambda row: row.minute, 1))[:, np.newaxis]
+                           ),
+                          axis=1)  #.astype(dtype=np.int64)
+    # print(date)
 
     interpolation_model = InterpolationRemoveLongMissingValue(configs)
     # interpolation_model = InterpolationPoly(configs)
     # interpolation_model = InterpolationKNN(configs)
 
-    flux = interpolation_model.get_dataset(flux, test)
+    date, flux = interpolation_model.get_dataset(date, flux, test)
     print('len after interpolation:', len(flux))
+
+
+    # print(df_stamp)
+    # print(date)
 
     return date, flux
 
@@ -106,14 +161,16 @@ class JeonpaDataset(Dataset):
         date, flux = get_data_from_path(configs, self.configs.data.trainset, root_dir=root_dir)
         split_index = int(len(flux) * self.split_rate)
         # print(len(flux))
-        self.train = flux[:split_index]
-        self.test = flux[split_index:]
+        self.train_date = date[:split_index]
+        self.train_flux = flux[:split_index]
+        self.test_date = date[split_index:]
+        self.test_flux = flux[split_index:]
 
     def __len__(self):
         if self.train:
-            return len(self.train)
+            return len(self.train_flux)
         else:
-            return len(self.test)
+            return len(self.test_flux)
 
     def __getitem__(self, idx):
         if self.train:
@@ -127,12 +184,12 @@ class JeonpaDataset(Dataset):
             # flatten -> 차원 밀어서 -> 1차원
             # squeeze((3, 1, 1, 1, 1, 2)) -> (3, 2)
             # sequeeze((3, 1, 2, 1), dim=1) -> (3, 2, 1)
-            return self.train[idx]
+            return self.train_date[idx], self.train_flux[idx]
         else:
             # validation_seq = self.test_flux[idx:idx + self.seq_len][:, np.newaxis]
             # validation_pred = self.test_flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]
             # return validation_seq, validation_pred
-            return self.test[idx]
+            return self.test_date[idx], self.test_flux[idx]
 
 
 class JeonpaTestDataset(Dataset):

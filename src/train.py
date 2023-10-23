@@ -22,7 +22,7 @@ class Train:
         self.testloader = create_testloader(config, root_dir=root_dir)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model = DLinear(self.config)
+        # self.model = DLinear(self.config)
 
         # self.model = DCRNNModel(
         #     adj_mat=None,
@@ -58,19 +58,19 @@ class Train:
         #   --c_out 321 \
         #   --des 'Exp' \
         #   --itr 1
-        # self.model = AutoFormer(config)
+        self.model = AutoFormer(config)
         self.optimizer = self.get_optimizer()
         self.criterion = self.get_criterion()
 
-        local_rank = int(os.environ["LOCAL_RANK"])
-        print("local rank:", local_rank)
-
-        self.model = torch.nn.parallel.DistributedDataParallel(
-            self.model,
-            find_unused_parameters=True,
-            # device_ids=[local_rank],
-            # output_device=local_rank,
-        )
+        # local_rank = int(os.environ["LOCAL_RANK"])
+        # print("local rank:", local_rank)
+        #
+        # self.model = torch.nn.parallel.DistributedDataParallel(
+        #     self.model,
+        #     find_unused_parameters=True,
+        #     # device_ids=[local_rank],
+        #     # output_device=local_rank,
+        # )
 
         # self.model.to(self.device)
 
@@ -103,22 +103,48 @@ class Train:
 
             self.model.train()
             losses = []
-            self.trainloader.sampler.set_epoch(step)
+            # self.trainloader.sampler.set_epoch(step)
 
-            for train_seq, train_pred in self.trainloader:  # 요게 다 돌면 에포크
+            for train_date_seq, train_flux_seq, train_date_pred, train_flux_pred in self.trainloader:  # 요게 다 돌면 에포크
+            # for train_flux_seq, train_flux_pred in self.trainloader:
+                def _predict(batch_x, batch_y, batch_x_mark, batch_y_mark):
+                    # decoder input
+                    dec_inp = torch.zeros_like(batch_y[:, -self.config.model.pred_len:, :]).float()
+                    dec_inp = torch.cat([batch_y[:, :self.config.model.label_len, :], dec_inp], dim=1).float().to(self.device)
+
+                    # encoder - decoder
+                    def _run_model():
+                        outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                        if self.config.model.output_attention:
+                            outputs = outputs[0]
+                        return outputs
+
+                    # if self.args.use_amp:
+                    #     with torch.cuda.amp.autocast():
+                    #         outputs = _run_model()
+                    # else:
+                    outputs = _run_model()
+
+                    f_dim = -1 if self.config.model.features == 'MS' else 0
+                    outputs = outputs[:, -self.config.model.pred_len:, f_dim:]
+                    batch_y = batch_y[:, -self.config.model.pred_len:, f_dim:].to(self.device)
+
+                    return outputs, batch_y
+
                 # CRNN
-                train_seq = train_seq.to(self.device)
-                train_pred = train_pred.to(self.device)
+                train_flux_seq = train_flux_seq.to(self.device)
+                train_flux_pred = train_flux_pred.to(self.device)
                 # train_seq = train_seq.squeeze(2).to(self.device)
                 # train_pred = train_pred.squeeze(2).to(self.device)
                 # print("train_seq:", train_seq)
                 # print("train_pred:", train_pred)
                 # print(train_seq.shape, train_pred.shape)
 
-                result = self.model(train_seq)
+                # result = self.model(train_flux_seq)
+                result, batch_y = _predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
                 # RMSE = torch.sqrt(criterion(x, y))
                 # loss = torch.sqrt(self.criterion(result, train_pred))
-                loss = self.criterion(result, train_pred)
+                loss = self.criterion(result, batch_y)
 
                 self.optimizer.zero_grad()
                 loss.backward()
