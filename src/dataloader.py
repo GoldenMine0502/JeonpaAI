@@ -189,6 +189,8 @@ class JeonpaTestDataset(Dataset):
     def __init__(self, configs, root_dir=None):
         self.configs = configs
         self.seq_len = configs.model.seq_len
+        self.pred_len = configs.model.pred_len
+        self.label_len = configs.model.label_len
         self.date, self.flux = get_data_from_path(configs, self.configs.data.testset, test=True, root_dir=root_dir)
         # print(self.date[0].shxape)
         # print(self.flux)
@@ -217,7 +219,7 @@ class JeonpaTestDataset(Dataset):
         months = []
         days = []
         weekdays = []
-        for i in range(60):  # 예측 30개
+        for i in range(self.pred_len + self.label_len):  # 예측 30개
             if i <= 29:
                 res = datetime.datetime(2023, 11, i + 1)
             else:
