@@ -8,6 +8,8 @@ from models.dcrnn import DCRNNModel
 from models.crnn import CRNN
 from models.autoformer import AutoFormer
 from models.informer import Informer
+from models.reformer import Reformer
+from models.transformer import Transformer
 from dataloader import create_dataloader, create_testloader
 
 
@@ -61,7 +63,9 @@ class Train:
         #   --des 'Exp' \
         #   --itr 1
         # self.model = AutoFormer(config)
-        self.model = Informer(config)
+        # self.model = Informer(config)
+        # self.model = Reformer(config)
+        self.model = Transformer(config)
         self.optimizer = self.get_optimizer()
         self.criterion = self.get_criterion()
 

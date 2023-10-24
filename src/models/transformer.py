@@ -1,24 +1,18 @@
-import math
-from math import sqrt
-
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from reformer_pytorch import LSHSelfAttention
 from layers.Transformer_EncDec import Decoder, DecoderLayer, Encoder, EncoderLayer, ConvLayer
-from layers.SelfAttention_Family import FullAttention, ProbAttention, AttentionLayer
+from layers.SelfAttention_Family import FullAttention, AttentionLayer
 from layers.Embed import DataEmbedding
+import numpy as np
 
-from utils.masking import TriangularCausalMask, ProbMask
 
-
-class Informer(nn.Module):
+class Transformer(nn.Module):
     """
-    Informer with Propspare attention in O(LlogL) complexity
+    Vanilla Transformer with O(L^2) complexity
     """
     def __init__(self, configs):
-        super(Informer, self).__init__()
+        super(Transformer, self).__init__()
         self.pred_len = configs.model.pred_len
         self.output_attention = configs.model.output_attention
 
@@ -27,26 +21,19 @@ class Informer(nn.Module):
                                            configs.model.dropout)
         self.dec_embedding = DataEmbedding(configs.model.dec_in, configs.model.d_model, configs.model.embed, configs.model.freq,
                                            configs.model.dropout)
-
         # Encoder
         self.encoder = Encoder(
             [
                 EncoderLayer(
                     AttentionLayer(
-                        ProbAttention(False, configs.model.factor, attention_dropout=configs.model.dropout,
-                                      output_attention=configs.model.output_attention),
-                        configs.model.d_model, configs.model.n_heads),
+                        FullAttention(False, configs.model.factor, attention_dropout=configs.model.dropout,
+                                      output_attention=configs.model.output_attention), configs.model.d_model, configs.model.n_heads),
                     configs.model.d_model,
                     configs.model.d_ff,
                     dropout=configs.model.dropout,
                     activation=configs.model.activation
                 ) for l in range(configs.model.e_layers)
             ],
-            [
-                ConvLayer(
-                    configs.model.d_model
-                ) for l in range(configs.model.e_layers - 1)
-            ] if configs.model.distil else None,
             norm_layer=torch.nn.LayerNorm(configs.model.d_model)
         )
         # Decoder
@@ -54,10 +41,10 @@ class Informer(nn.Module):
             [
                 DecoderLayer(
                     AttentionLayer(
-                        ProbAttention(True, configs.model.factor, attention_dropout=configs.model.dropout, output_attention=False),
+                        FullAttention(True, configs.model.factor, attention_dropout=configs.model.dropout, output_attention=False),
                         configs.model.d_model, configs.model.n_heads),
                     AttentionLayer(
-                        ProbAttention(False, configs.model.factor, attention_dropout=configs.model.dropout, output_attention=False),
+                        FullAttention(False, configs.model.factor, attention_dropout=configs.model.dropout, output_attention=False),
                         configs.model.d_model, configs.model.n_heads),
                     configs.model.d_model,
                     configs.model.d_ff,
