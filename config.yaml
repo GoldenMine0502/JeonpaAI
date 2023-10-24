@@ -4,7 +4,7 @@ model:
   pred_len: 30
   individual: False
   channels: 1
-  moving_avg: 25
+  moving_avg: 15
   output_attention: False
   enc_in: 1
   dec_in: 1
@@ -18,7 +18,7 @@ model:
   n_hashes: 4
   bucket_size: 4
   d_ff: 2048
-  activation: relu
+  activation: gelu
   e_layers: 2
   d_layers: 1
   features: M
@@ -28,16 +28,16 @@ train:
   batch_size: 512
   num_workers: 0 # num_workers does not work
   optimizer: 'adam'
-  adam: 0.0005
-  summary_interval: 10
-  checkpoint_interval: 100
-  step_limit: 30000
+  adam: 0.00001
+  summary_interval: 250
+  checkpoint_interval: 1000
+  step_limit: 15000
 
 ---
 data:
   trainset: 'dataset/ai_competition_train.csv'
   testset: 'dataset/ai_competition_test.csv'
-  split_rate: 0.95
+  split_rate: 0.9
 
 ---
 log:

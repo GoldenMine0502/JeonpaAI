@@ -26,7 +26,7 @@ class Train:
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         # self.device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
-        # self.model = DLinear(self.config)
+        self.model = DLinear(self.config)
 
         # self.model = DCRNNModel(
         #     adj_mat=None,
@@ -65,7 +65,7 @@ class Train:
         # self.model = AutoFormer(config)
         # self.model = Informer(config)
         # self.model = Reformer(config)
-        self.model = Transformer(config)
+        # self.model = Transformer(config)
         self.optimizer = self.get_optimizer()
         self.criterion = self.get_criterion()
 
@@ -151,11 +151,11 @@ class Train:
                 # print("train_pred:", train_pred)
                 # print(train_date_seq.shape, train_date_pred.shape)
 
-                # result = self.model(train_flux_seq)
-                result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
+                result = self.model(train_flux_seq)
+                # result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
                 # RMSE = torch.sqrt(criterion(x, y))x
-                # loss = torch.sqrt(self.criterion(result, train_pred))
-                loss = self.criterion(result, batch_y)
+                loss = self.criterion(result, train_flux_pred)
+                # loss = self.criterion(result, batch_y)
 
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -220,8 +220,8 @@ class Train:
                 # print("train_pred:", train_pred)
                 # print(train_seq.shape, train_pred.shape)
 
-                # result = self.model(train_flux_seq)
-                result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
+                result = self.model(train_flux_seq)
+                # result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
             # for validation_seq, validation_pred in self.validationloader:
             #     validation_seq = validation_seq.to(self.device)
             #     validation_pred = validation_pred.to(self.device)
@@ -232,9 +232,9 @@ class Train:
                 # RMSE = torch.sqrt(criterion(x, y))
                 # loss = torch.sqrt(criterion(result, train_pred))
                 if rmse:
-                    loss = torch.sqrt(criterion(result, batch_y))
+                    loss = torch.sqrt(criterion(result, train_flux_pred))
                 else:
-                    loss = criterion(result, batch_y)
+                    loss = criterion(result, train_flux_pred)
                 loss = loss.item()
                 losses.append(loss)
 
@@ -253,8 +253,9 @@ class Train:
                 # test_seq = test_seq.squeeze(2).to(self.device)
                 test_flux_pred = torch.zeros((test_date_seq.size(dim=0), self.model.pred_len, self.config.model.channels)).to(self.device)
 
-                result, batch_y = self._predict(test_flux_seq, test_flux_pred, test_date_seq, date)
+                # result, batch_y = self._predict(test_flux_seq, test_flux_pred, test_date_seq, date)
                 # result, batch_y = self._predict(train_flux_seq, train_flux_pred, train_date_seq, train_date_pred)
+                result = self.model(test_flux_seq)
                 self.write_csv(result, step)
 
     def write_csv(self, result, step):

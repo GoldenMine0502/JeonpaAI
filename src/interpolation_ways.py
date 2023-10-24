@@ -55,14 +55,14 @@ class InterpolationRemoveLongMissingValue:
             dataset_date = []
             dataset_flux = []
             for idx in range(len(flux) - self.seq_len + 1):
-                # test_seq = flux[idx:idx + self.seq_len][:, np.newaxis]
-                # test_date_seq = date[idx:idx + self.seq_len]
-                s_begin = idx
-                s_end = s_begin + self.seq_len
-
-                test_flux_seq = flux[s_begin:s_end][:, np.newaxis]
-                # print(train_seq)
-                test_date_seq = date[s_begin:s_end]
+                test_flux_seq = flux[idx:idx + self.seq_len][:, np.newaxis]
+                test_date_seq = date[idx:idx + self.seq_len]
+                # s_begin = idx
+                # s_end = s_begin + self.seq_len
+                #
+                # test_flux_seq = flux[s_begin:s_end][:, np.newaxis]
+                # # print(train_seq)
+                # test_date_seq = date[s_begin:s_end]
 
                 dataset_flux.append(test_flux_seq)
                 dataset_date.append(test_date_seq)
@@ -71,14 +71,19 @@ class InterpolationRemoveLongMissingValue:
         else:
             fancy = []
             for idx in range(len(flux) - self.seq_len - self.pred_len + 1):
-                s_begin = idx
-                s_end = s_begin + self.seq_len
-                r_begin = s_end - self.label_len
-                r_end = r_begin + self.label_len + self.pred_len
-
-                train_seq = flux[s_begin:s_end][:, np.newaxis]  # 10~70
+                train_seq = flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
                 # print(train_seq)
-                train_pred = flux[r_begin:r_end][:, np.newaxis]  # 70~100
+                train_pred = flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
+                train_date_seq = date[idx:idx + self.seq_len]
+                train_date_pred = date[idx + self.seq_len:idx + self.seq_len + self.pred_len]
+                # s_begin = idx
+                # s_end = s_begin + self.seq_len
+                # r_begin = s_end - self.label_len
+                # r_end = r_begin + self.label_len + self.pred_len
+                #
+                # train_seq = flux[s_begin:s_end][:, np.newaxis]  # 10~70
+                # # print(train_seq)
+                # train_pred = flux[r_begin:r_end][:, np.newaxis]  # 70~100
 
                 # 데이터가 연속으로 결측치면 제거
                 count = 0
@@ -106,22 +111,22 @@ class InterpolationRemoveLongMissingValue:
             dataset_flux = []
             dataset_date = []
             for idx in range(len(flux) - self.seq_len - self.pred_len + 1):
-                # train_seq = flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
+                train_seq = flux[idx:idx + self.seq_len][:, np.newaxis]  # 10~70
+                # print(train_seq)
+                train_pred = flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
+                train_date_seq = date[idx:idx + self.seq_len]
+                train_date_pred = date[idx + self.seq_len:idx + self.seq_len + self.pred_len]
+                # s_begin = idx
+                # s_end = s_begin + self.seq_len
+                # r_begin = s_end - self.label_len
+                # r_end = r_begin + self.label_len + self.pred_len
+                #
+                # train_seq = flux[s_begin:s_end][:, np.newaxis]  # 10~70
                 # # print(train_seq)
-                # train_pred = flux[idx + self.seq_len:idx + self.seq_len + self.pred_len][:, np.newaxis]  # 70~100
-                # train_date_seq = date[idx:idx + self.seq_len]
-                # train_date_pred = date[idx + self.seq_len:idx + self.seq_len + self.pred_len]
-                s_begin = idx
-                s_end = s_begin + self.seq_len
-                r_begin = s_end - self.label_len
-                r_end = r_begin + self.label_len + self.pred_len
-
-                train_seq = flux[s_begin:s_end][:, np.newaxis]  # 10~70
-                # print(train_seq)
-                train_pred = flux[r_begin:r_end][:, np.newaxis]  # 70~100
-                train_date_seq = date[s_begin:s_end]  # 10~70
-                # print(train_seq)
-                train_date_pred = date[r_begin:r_end]  # 70~100
+                # train_pred = flux[r_begin:r_end][:, np.newaxis]  # 70~100
+                # train_date_seq = date[s_begin:s_end]  # 10~70
+                # # print(train_seq)
+                # train_date_pred = date[r_begin:r_end]  # 70~100
 
 
                 if fancy[idx]:
