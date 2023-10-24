@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d, CubicSpline
@@ -51,6 +53,7 @@ class InterpolationRemoveLongMissingValue:
         flux[np.isnan(flux)] = mean_flux
 
     def get_dataset(self, date, flux, test=False):
+        random.seed(1234)
         if test:
             dataset_date = []
             dataset_flux = []
@@ -88,16 +91,16 @@ class InterpolationRemoveLongMissingValue:
                 # 데이터가 연속으로 결측치면 제거
                 count = 0
                 to_add = True
-                # for seq_value in np.concatenate((train_seq, train_pred)):
-                #     # print(seq_value)
-                #     if np.isnan(seq_value):
-                #         count += 1
-                #     # else:
-                #     #     count = 0
-                #
-                #     if count >= self.pass_count:
-                #         to_add = False
-                #         break
+                for seq_value in np.concatenate((train_seq, train_pred)):
+                    # print(seq_value)
+                    if np.isnan(seq_value):
+                        count += 1
+                    # else:
+                    #     count = 0
+
+                    if count >= self.pass_count:
+                        to_add = False
+                        break
 
                 # print(to_add)
 
@@ -130,8 +133,13 @@ class InterpolationRemoveLongMissingValue:
 
 
                 if fancy[idx]:
-                    dataset_flux.append((train_seq, train_pred))
-                    dataset_date.append((train_date_seq, train_date_pred))
+                    if len(dataset_flux) == 0:
+                        dataset_flux.append((train_seq, train_pred))
+                        dataset_date.append((train_date_seq, train_date_pred))
+                    else:
+                        idx_random = random.randint(0, len(dataset_flux))
+                        dataset_flux.insert(idx_random, (train_seq, train_pred))
+                        dataset_date.insert(idx_random, (train_date_seq, train_date_pred))
 
             # mean_flux = np.nanmean(flux)
             # flux[np.isnan(flux)] = mean_flux
